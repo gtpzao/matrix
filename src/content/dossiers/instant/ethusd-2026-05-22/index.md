@@ -1,6 +1,5 @@
 ---
 title: "ETHUSD // INSTANT"
-slug: "ethusd-2026-05-22"
 type: "instant"
 asset: "ETHUSD"
 date: 2026-05-22
@@ -8,7 +7,7 @@ excerpt: "Pullback curto encosta em suporte intraday. Leitura rapida de reacao e
 thesis: "Setup tatico depende de defesa no suporte imediato e reclaim da faixa de valor curta."
 cover: "/images/dossiers/ethusd-instant-cover.svg"
 markdownDownload: "/files/ethusd-instant-2026-05-22.md"
-tradingviewSymbol: "BINANCE:ETHUSDT"
+tradingviewSymbol: "CRYPTO:ETHUSD"
 tradingviewTimeframes:
   - "30"
   - "5"

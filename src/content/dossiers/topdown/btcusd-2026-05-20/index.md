@@ -1,6 +1,5 @@
 ---
 title: "BTCUSD // TOPDOWN"
-slug: "btcusd-2026-05-20"
 type: "topdown"
 asset: "BTCUSD"
 date: 2026-05-20
@@ -9,7 +8,7 @@ thesis: "Estrutura macro ainda construtiva, curto prazo corretivo, gatilho depen
 cover: "/images/dossiers/btcusd-topdown-cover.svg"
 pptx: "/files/btcusd-topdown-2026-05-20.pptx"
 markdownDownload: "/files/btcusd-topdown-2026-05-20.md"
-tradingviewSymbol: "BINANCE:BTCUSDT"
+tradingviewSymbol: "CRYPTO:BTCUSD"
 tradingviewTimeframes:
   - "D"
   - "240"

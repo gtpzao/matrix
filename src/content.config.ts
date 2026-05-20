@@ -3,7 +3,6 @@ import { defineCollection, z } from "astro:content";
 const dossiers = defineCollection({
   schema: z.object({
     title: z.string(),
-    slug: z.string().optional(),
     type: z.string(),
     asset: z.string(),
     date: z.coerce.date(),

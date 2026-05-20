@@ -1,6 +1,5 @@
 ---
 title: "US10Y // PANELA DE PRESSAO"
-slug: "us10y-2026-05-19"
 type: "topdown"
 asset: "US10Y"
 date: 2026-05-19

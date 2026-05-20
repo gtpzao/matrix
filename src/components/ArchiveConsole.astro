@@ -3,6 +3,7 @@ import ConsolePanel from "./ConsolePanel.astro";
 
 export type ArchiveDossier = {
   id: string;
+  slug: string;
   type: string;
   typeLabel: string;
   url: string;
@@ -139,7 +140,7 @@ const initialDossier =
   </div>
 </section>
 
-<script is:inline define:vars={{ dossiers, initialType }}>
+<script is:inline define:vars={{ dossiers, initialType, types }}>
   const initArchiveConsole = () => {
     const root = document.querySelector("[data-archive-console]");
     if (!root) return;
@@ -158,9 +159,62 @@ const initialDossier =
     const secondaryIntervalNode = root.querySelector("[data-detail-interval-secondary]");
     const primaryChart = root.querySelector("#tv-primary");
     const secondaryChart = root.querySelector("#tv-secondary");
+    const defaultDossier =
+      dossiers.find((dossier) => dossier.type === initialType) ?? dossiers[0];
 
-    let activeType = initialType;
-    let activeDossierId = null;
+    const resolveInitialSelection = () => {
+      const params = new URLSearchParams(window.location.search);
+      const requestedType = params.get("type");
+      const requestedSlug = params.get("slug");
+
+      const dossierFromSlug = requestedSlug
+        ? dossiers.find((dossier) => dossier.slug === requestedSlug)
+        : null;
+      const typeFromQuery = types.includes(requestedType ?? "")
+        ? requestedType
+        : dossierFromSlug?.type ?? initialType;
+      const dossierFromQuery = requestedSlug
+        ? dossiers.find(
+            (dossier) =>
+              dossier.slug === requestedSlug && dossier.type === typeFromQuery
+          )
+        : null;
+
+      return {
+        type: typeFromQuery,
+        dossierId: dossierFromQuery?.id ?? null
+      };
+    };
+
+    const syncArchiveLocation = () => {
+      const activeDossier = activeDossierId ? dossierMap.get(activeDossierId) : null;
+      const isDefaultSelection =
+        activeType === initialType && activeDossier?.id === defaultDossier?.id;
+      const params = new URLSearchParams(window.location.search);
+      let nextUrl = window.location.pathname;
+
+      if (!isDefaultSelection) {
+        params.set("type", activeType);
+
+        if (activeDossier?.slug) {
+          params.set("slug", activeDossier.slug);
+        } else {
+          params.delete("slug");
+        }
+
+        const query = params.toString();
+        nextUrl = query
+          ? `${window.location.pathname}?${query}`
+          : window.location.pathname;
+      }
+
+      window.history.replaceState(window.history.state, "", nextUrl);
+    };
+
+    const initialSelection = resolveInitialSelection();
+
+    let activeType = initialSelection.type;
+    let activeDossierId = initialSelection.dossierId;
 
     const dossierMap = new Map(dossiers.map((dossier) => [dossier.id, dossier]));
 
@@ -269,14 +323,19 @@ const initialDossier =
       if (primaryIntervalNode) primaryIntervalNode.textContent = dossier.tradingviewTimeframes[0];
       if (secondaryIntervalNode) secondaryIntervalNode.textContent = dossier.tradingviewTimeframes[1];
 
+      syncArchiveLocation();
       await renderWidgets(dossier);
     };
 
-    const setActiveType = async (type) => {
+    const setActiveType = async (type, preferredDossierId = null) => {
       activeType = type;
       syncTypeButtons();
       updateFeedVisibility();
-      const nextDossier = dossiers.find((dossier) => dossier.type === type);
+      const nextDossier =
+        dossiers.find(
+          (dossier) =>
+            dossier.type === type && dossier.id === preferredDossierId
+        ) ?? dossiers.find((dossier) => dossier.type === type);
       if (nextDossier) {
         await setSelectedDossier(nextDossier.id);
       }
@@ -300,7 +359,7 @@ const initialDossier =
 
     updateFeedVisibility();
     syncTypeButtons();
-    void setActiveType(initialType);
+    void setActiveType(initialSelection.type, initialSelection.dossierId);
   };
 
   if (!window.__matrixArchiveInit) {

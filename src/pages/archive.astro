@@ -11,6 +11,7 @@ const initialType = types[0] ?? "topdown";
 
 const dossiers = resolved.map((item) => ({
   id: item.entry.id,
+  slug: item.slug,
   type: item.type,
   typeLabel: item.typeLabel,
   url: item.url,

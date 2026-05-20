@@ -15,10 +15,6 @@ export type ResolvedDossier = {
 const typePriority = ["topdown", "instant"];
 
 export function dossierSlug(entry: DossierEntry): string {
-  if (entry.data.slug) {
-    return entry.data.slug;
-  }
-
   const parts = entry.id.split("/");
   const last = parts.at(-1) ?? "";
   if (last === "index.md" || last === "index.mdx") {
@@ -46,7 +42,7 @@ export function typeLabel(type: string): string {
 }
 
 export function dossierUrl(entry: DossierEntry): string {
-  return `/dossiers/${dossierType(entry)}/${dossierSlug(entry)}/`;
+  return `/dossiers/${dossierType(entry)}/${dossierSlug(entry)}`;
 }
 
 export function sortDossiers(entries: DossierEntry[]): DossierEntry[] {

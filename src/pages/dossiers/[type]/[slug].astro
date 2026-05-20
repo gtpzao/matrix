@@ -22,6 +22,10 @@ export async function getStaticPaths() {
 
 const { entry, resolved } = Astro.props;
 const { Content } = await render(entry);
+const archiveHref = `/archive?${new URLSearchParams({
+  type: resolved.type,
+  slug: resolved.slug
+}).toString()}`;
 
 if (
   dossierType(entry) !== Astro.params.type ||
@@ -38,7 +42,7 @@ if (
 >
   <main class="dossier-shell site-shell">
     <div class="dossier-topbar">
-      <a class="action-link action-link--back" href="/archive">
+      <a class="action-link action-link--back" href={archiveHref}>
         <span>&lt;- ARCHIVE</span>
       </a>
       <span class="dossier-topbar__id">{resolved.fileId}</span>
@@ -120,7 +124,7 @@ if (
               <strong>{entry.data.tradingviewTimeframes[1]}</strong>
             </div>
           </div>
-          <a class="action-link" href="/archive">
+          <a class="action-link" href={archiveHref}>
             <span>OPEN LIVE CONSOLE</span>
             <span aria-hidden="true">-&gt;</span>
           </a>
