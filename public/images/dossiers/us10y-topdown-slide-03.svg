@@ -1,0 +1,20 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="900" fill="#020603"/>
+  <text x="112" y="126" fill="#8DFFB4" font-family="'IBM Plex Mono', monospace" font-size="24" letter-spacing="8">SLIDE 03 // DECISION TREE</text>
+  <text x="112" y="214" fill="#EAF7EE" font-family="'Oxanium', monospace" font-size="72" letter-spacing="12">GATE TO 6% OPENS ONLY ABOVE 5.02%</text>
+  <rect x="112" y="292" width="420" height="430" rx="18" stroke="#365845"/>
+  <rect x="590" y="292" width="420" height="430" rx="18" stroke="#365845"/>
+  <rect x="1068" y="292" width="372" height="430" rx="18" stroke="#365845"/>
+  <text x="152" y="362" fill="#8DFFB4" font-family="'IBM Plex Mono', monospace" font-size="24" letter-spacing="6">BASE CASE</text>
+  <text x="152" y="434" fill="#EAF7EE" font-family="'IBM Plex Mono', monospace" font-size="28">HOLD 4.40%</text>
+  <text x="152" y="490" fill="#EAF7EE" font-family="'IBM Plex Mono', monospace" font-size="28">RETEST 4.75%-5.02%</text>
+  <text x="152" y="546" fill="#EAF7EE" font-family="'IBM Plex Mono', monospace" font-size="28">BREAK -> EXPANSION</text>
+  <text x="630" y="362" fill="#8DFFB4" font-family="'IBM Plex Mono', monospace" font-size="24" letter-spacing="6">ALT CASE</text>
+  <text x="630" y="434" fill="#EAF7EE" font-family="'IBM Plex Mono', monospace" font-size="28">REJECT TOP</text>
+  <text x="630" y="490" fill="#EAF7EE" font-family="'IBM Plex Mono', monospace" font-size="28">PULLBACK 4.55%-4.60%</text>
+  <text x="630" y="546" fill="#EAF7EE" font-family="'IBM Plex Mono', monospace" font-size="28">STILL VALID ABOVE 4.40%</text>
+  <text x="1108" y="362" fill="#8DFFB4" font-family="'IBM Plex Mono', monospace" font-size="24" letter-spacing="6">INVALIDATION</text>
+  <text x="1108" y="434" fill="#EAF7EE" font-family="'IBM Plex Mono', monospace" font-size="28">LOSE 4.40%</text>
+  <text x="1108" y="490" fill="#EAF7EE" font-family="'IBM Plex Mono', monospace" font-size="28">FALSE BREAK RISK</text>
+  <text x="1108" y="546" fill="#EAF7EE" font-family="'IBM Plex Mono', monospace" font-size="28">4.15%-4.20% WEAKENS THESIS</text>
+</svg>

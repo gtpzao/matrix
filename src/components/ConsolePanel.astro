@@ -1,0 +1,23 @@
+---
+interface Props {
+  title?: string;
+  eyebrow?: string;
+  className?: string;
+}
+
+const { title, eyebrow, className = "" } = Astro.props;
+---
+
+<section class={`console-panel ${className}`.trim()}>
+  {
+    (title || eyebrow) && (
+      <header class="console-panel__head">
+        {eyebrow && <span class="console-panel__eyebrow">{eyebrow}</span>}
+        {title && <h2 class="console-panel__title">{title}</h2>}
+      </header>
+    )
+  }
+  <div class="console-panel__body">
+    <slot />
+  </div>
+</section>

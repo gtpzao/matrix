@@ -1,0 +1,46 @@
+---
+interface Props {
+  title: string;
+  asset: string;
+  type: string;
+  excerpt: string;
+  cover?: string;
+  slides?: string[];
+}
+
+const {
+  title,
+  asset,
+  type,
+  excerpt,
+  cover,
+  slides = []
+} = Astro.props;
+
+const media = [...new Set([cover, ...slides].filter(Boolean))];
+---
+
+<section class="dossier-deck">
+  {
+    media.length > 0 ? (
+      media.map((image, index) => (
+        <figure class="deck-media">
+          <img
+            src={image}
+            alt={`${title} frame ${index + 1}`}
+            loading={index === 0 ? "eager" : "lazy"}
+          />
+        </figure>
+      ))
+    ) : (
+      <article class="deck-placeholder">
+        <span class="deck-placeholder__eyebrow">VISUAL SLOT OPEN</span>
+        <h2>{asset} // {type.toUpperCase()}</h2>
+        <p>{excerpt}</p>
+        <span class="deck-placeholder__note">
+          link manual slide exports in frontmatter when ready
+        </span>
+      </article>
+    )
+  }
+</section>

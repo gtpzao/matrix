@@ -1,0 +1,137 @@
+---
+import { getCollection, render } from "astro:content";
+import ConsolePanel from "../../../components/ConsolePanel.astro";
+import DossierDeck from "../../../components/DossierDeck.astro";
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { dossierSlug, dossierType, resolveDossier, sortDossiers } from "../../../lib/dossiers";
+
+export async function getStaticPaths() {
+  const entries = sortDossiers(await getCollection("dossiers"));
+
+  return entries.map((entry) => {
+    const resolved = resolveDossier(entry);
+    return {
+      params: {
+        type: resolved.type,
+        slug: resolved.slug
+      },
+      props: { entry, resolved }
+    };
+  });
+}
+
+const { entry, resolved } = Astro.props;
+const { Content } = await render(entry);
+
+if (
+  dossierType(entry) !== Astro.params.type ||
+  dossierSlug(entry) !== Astro.params.slug
+) {
+  throw new Error("Dossier route mismatch.");
+}
+---
+
+<BaseLayout
+  title={`${entry.data.title} | Matrix Dossier`}
+  description={entry.data.excerpt}
+  pageClass="page-dossier"
+>
+  <main class="dossier-shell site-shell">
+    <div class="dossier-topbar">
+      <a class="action-link action-link--back" href="/archive">
+        <span>&lt;- ARCHIVE</span>
+      </a>
+      <span class="dossier-topbar__id">{resolved.fileId}</span>
+    </div>
+
+    <section class="dossier-hero">
+      <div class="dossier-hero__copy">
+        <p class="eyebrow">[ DOSSIER FILE ]</p>
+        <h1>{entry.data.title}</h1>
+        <p class="dossier-hero__thesis">{entry.data.thesis ?? entry.data.excerpt}</p>
+      </div>
+
+      <div class="dossier-hero__facts">
+        <span>
+          ASSET
+          <strong>{entry.data.asset}</strong>
+        </span>
+        <span>
+          TYPE
+          <strong>{entry.data.type.toUpperCase()}</strong>
+        </span>
+        <span>
+          UPDATED
+          <strong>{resolved.dateDisplay}</strong>
+        </span>
+      </div>
+    </section>
+
+    <section class="dossier-showcase">
+      <div class="dossier-showcase__media">
+        <DossierDeck
+          title={entry.data.title}
+          asset={entry.data.asset}
+          type={entry.data.type}
+          excerpt={entry.data.excerpt}
+          cover={entry.data.cover}
+          slides={entry.data.slideImages}
+        />
+      </div>
+
+      <aside class="dossier-showcase__meta">
+        <ConsolePanel title="THESIS">
+          <p class="console-copy">{entry.data.excerpt}</p>
+        </ConsolePanel>
+
+        <ConsolePanel title="DOWNLOADS">
+          <div class="download-stack">
+            {
+              entry.data.pptx && (
+                <a class="action-link" href={entry.data.pptx} download>
+                  <span>DOWNLOAD PPTX</span>
+                  <span aria-hidden="true">-&gt;</span>
+                </a>
+              )
+            }
+            {
+              entry.data.markdownDownload && (
+                <a class="action-link" href={entry.data.markdownDownload} download>
+                  <span>DOWNLOAD MARKDOWN</span>
+                  <span aria-hidden="true">-&gt;</span>
+                </a>
+              )
+            }
+          </div>
+        </ConsolePanel>
+
+        <ConsolePanel title="LIVE MAP">
+          <div class="detail-meta">
+            <div class="detail-meta__row">
+              <span>SYMBOL</span>
+              <strong>{entry.data.tradingviewSymbol}</strong>
+            </div>
+            <div class="detail-meta__row">
+              <span>TF-01</span>
+              <strong>{entry.data.tradingviewTimeframes[0]}</strong>
+            </div>
+            <div class="detail-meta__row">
+              <span>TF-02</span>
+              <strong>{entry.data.tradingviewTimeframes[1]}</strong>
+            </div>
+          </div>
+          <a class="action-link" href="/archive">
+            <span>OPEN LIVE CONSOLE</span>
+            <span aria-hidden="true">-&gt;</span>
+          </a>
+        </ConsolePanel>
+      </aside>
+    </section>
+
+    <ConsolePanel title="WRITTEN DOSSIER" className="dossier-article">
+      <article class="prose">
+        <Content />
+      </article>
+    </ConsolePanel>
+  </main>
+</BaseLayout>

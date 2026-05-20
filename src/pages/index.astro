@@ -1,0 +1,32 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Matrix Dossier"
+  description="Matrix Dossier archive access point."
+  pageClass="page-landing"
+>
+  <main class="landing">
+    <span class="landing__coord landing__coord--top-left">
+      COORDINATES
+      <strong>37.7749° N, 122.4194° W</strong>
+    </span>
+    <span class="landing__coord landing__coord--top-right">
+      SIGNAL
+      <strong>// STABLE</strong>
+    </span>
+    <span class="landing__coord landing__coord--bottom-left">
+      TIMESTAMP
+      <strong>2024.05.24 14:32:07 UTC</strong>
+    </span>
+
+    <div class="landing__core">
+      <p class="landing__kicker">[ ACCESS NODE ]</p>
+      <h1 transition:name="matrix-title">MATRIX DOSSIER</h1>
+      <a class="landing__entry action-link action-link--large" href="/archive">
+        <span>[ ACCESS ARCHIVE ]</span>
+      </a>
+    </div>
+  </main>
+</BaseLayout>

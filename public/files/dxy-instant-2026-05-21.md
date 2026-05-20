@@ -1,0 +1,15 @@
+# DXY // INSTANT
+
+## Snapshot tatico
+
+### Leitura principal
+
+O indice do dolar chega em resistencia local depois de uma perna direcional limpa. O foco e observar se o mercado aceita acima da regiao ou se transforma o teste em exaustao de curto prazo.
+
+### Cenario principal
+
+Aceitacao acima da resistencia mantem a expansao e pode abrir nova perna curta. Sem follow-through, o preco tende a recuar para a area media do range imediato.
+
+### Invalidacao
+
+Rejeicao forte com perda do ultimo fundo intraday enfraquece a leitura de continuacao e devolve o controle ao vendedor.

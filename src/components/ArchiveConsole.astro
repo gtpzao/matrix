@@ -1,0 +1,295 @@
+---
+import ConsolePanel from "./ConsolePanel.astro";
+
+export type ArchiveDossier = {
+  id: string;
+  type: string;
+  typeLabel: string;
+  url: string;
+  asset: string;
+  title: string;
+  excerpt: string;
+  thesis?: string;
+  dateDisplay: string;
+  fileId: string;
+  tradingviewSymbol: string;
+  tradingviewTimeframes: string[];
+};
+
+interface Props {
+  dossiers: ArchiveDossier[];
+  types: string[];
+  initialType: string;
+}
+
+const { dossiers, types, initialType } = Astro.props;
+---
+
+<section class="archive-console" data-archive-console>
+  <div class="archive-console__grid">
+    <ConsolePanel title="DOSSIER TYPES" className="archive-console__types">
+      <div class="type-list">
+        {
+          types.map((type) => (
+            <button
+              class:list={["type-button", { "is-active": type === initialType }]}
+              type="button"
+              data-type-button={type}
+            >
+              <span class="type-button__title">{type.toUpperCase()}</span>
+              <span class="type-button__copy">
+                {type === "topdown"
+                  ? "multi-timeframe structural readings"
+                  : type === "instant"
+                    ? "fast tactical snapshots"
+                    : "dynamic archive branch"}
+              </span>
+            </button>
+          ))
+        }
+      </div>
+    </ConsolePanel>
+
+    <ConsolePanel title="RECENT DOSSIERS" className="archive-console__feed">
+      <div class="feed-list">
+        {
+          dossiers.map((dossier, index) => (
+            <button
+              type="button"
+              class:list={["feed-item", { "is-active": index === 0 }]}
+              data-dossier-item={dossier.id}
+              data-dossier-type={dossier.type}
+            >
+              <span class="feed-item__row">
+                <span class="feed-item__asset">{dossier.asset}</span>
+                <span class="feed-item__date">{dossier.dateDisplay}</span>
+              </span>
+              <span class="feed-item__title">{dossier.title}</span>
+              <span class="feed-item__excerpt">{dossier.excerpt}</span>
+            </button>
+          ))
+        }
+      </div>
+    </ConsolePanel>
+
+    <ConsolePanel title="LIVE STRUCTURE" className="archive-console__detail">
+      <div class="detail-stack">
+        <div class="widget-shell">
+          <div class="widget-shell__header">
+            <span data-detail-symbol>--</span>
+            <span data-detail-interval-primary>--</span>
+          </div>
+          <div class="tv-chart" id="tv-primary"></div>
+        </div>
+
+        <div class="widget-shell">
+          <div class="widget-shell__header">
+            <span data-detail-symbol-secondary>--</span>
+            <span data-detail-interval-secondary>--</span>
+          </div>
+          <div class="tv-chart" id="tv-secondary"></div>
+        </div>
+
+        <div class="detail-meta">
+          <div class="detail-meta__row">
+            <span>ASSET</span>
+            <strong data-detail-asset>--</strong>
+          </div>
+          <div class="detail-meta__row">
+            <span>TYPE</span>
+            <strong data-detail-type>--</strong>
+          </div>
+          <div class="detail-meta__row">
+            <span>UPDATED</span>
+            <strong data-detail-date>--</strong>
+          </div>
+          <div class="detail-meta__row detail-meta__row--stack">
+            <span>THESIS</span>
+            <p data-detail-thesis>--</p>
+          </div>
+          <div class="detail-meta__row detail-meta__row--stack">
+            <span>FILE ID</span>
+            <strong data-detail-fileid>--</strong>
+          </div>
+        </div>
+
+        <a class="action-link" href="#" data-detail-link>
+          <span>OPEN DOSSIER</span>
+          <span aria-hidden="true">-&gt;</span>
+        </a>
+      </div>
+    </ConsolePanel>
+  </div>
+</section>
+
+<script is:inline define:vars={{ dossiers, initialType }}>
+  const initArchiveConsole = () => {
+    const root = document.querySelector("[data-archive-console]");
+    if (!root) return;
+
+    const typeButtons = [...root.querySelectorAll("[data-type-button]")];
+    const dossierButtons = [...root.querySelectorAll("[data-dossier-item]")];
+    const assetNode = root.querySelector("[data-detail-asset]");
+    const typeNode = root.querySelector("[data-detail-type]");
+    const dateNode = root.querySelector("[data-detail-date]");
+    const thesisNode = root.querySelector("[data-detail-thesis]");
+    const fileIdNode = root.querySelector("[data-detail-fileid]");
+    const linkNode = root.querySelector("[data-detail-link]");
+    const symbolNode = root.querySelector("[data-detail-symbol]");
+    const symbolNodeSecondary = root.querySelector("[data-detail-symbol-secondary]");
+    const primaryIntervalNode = root.querySelector("[data-detail-interval-primary]");
+    const secondaryIntervalNode = root.querySelector("[data-detail-interval-secondary]");
+    const primaryChart = root.querySelector("#tv-primary");
+    const secondaryChart = root.querySelector("#tv-secondary");
+
+    let activeType = initialType;
+    let activeDossierId = null;
+
+    const dossierMap = new Map(dossiers.map((dossier) => [dossier.id, dossier]));
+
+    const ensureTradingView = async () => {
+      if (window.TradingView?.widget) return true;
+
+      let script = document.querySelector("script[data-tv-script]");
+      if (!script) {
+        script = document.createElement("script");
+        script.src = "https://s3.tradingview.com/tv.js";
+        script.async = true;
+        script.dataset.tvScript = "true";
+        document.head.appendChild(script);
+      }
+
+      await new Promise((resolve, reject) => {
+        if (window.TradingView?.widget) {
+          resolve(true);
+          return;
+        }
+
+        script.addEventListener("load", () => resolve(true), { once: true });
+        script.addEventListener("error", () => reject(new Error("tv-load")), {
+          once: true
+        });
+      }).catch(() => false);
+
+      return Boolean(window.TradingView?.widget);
+    };
+
+    const renderWidgets = async (dossier) => {
+      if (!primaryChart || !secondaryChart) return;
+      primaryChart.innerHTML = "";
+      secondaryChart.innerHTML = "";
+
+      const tvReady = await ensureTradingView();
+      if (!tvReady) {
+        primaryChart.innerHTML =
+          '<div class="tv-chart__fallback">TRADINGVIEW UNAVAILABLE</div>';
+        secondaryChart.innerHTML =
+          '<div class="tv-chart__fallback">TRADINGVIEW UNAVAILABLE</div>';
+        return;
+      }
+
+      primaryChart.innerHTML = '<div id="tv-primary-frame"></div>';
+      secondaryChart.innerHTML = '<div id="tv-secondary-frame"></div>';
+
+      const commonConfig = {
+        symbol: dossier.tradingviewSymbol,
+        theme: "dark",
+        style: "1",
+        locale: "en",
+        autosize: true,
+        allow_symbol_change: false,
+        hide_top_toolbar: true,
+        hide_legend: true,
+        save_image: false,
+        backgroundColor: "#020603",
+        gridColor: "rgba(157,255,191,0.08)"
+      };
+
+      new window.TradingView.widget({
+        ...commonConfig,
+        interval: dossier.tradingviewTimeframes[0],
+        container_id: "tv-primary-frame"
+      });
+
+      new window.TradingView.widget({
+        ...commonConfig,
+        interval: dossier.tradingviewTimeframes[1],
+        container_id: "tv-secondary-frame"
+      });
+    };
+
+    const updateFeedVisibility = () => {
+      dossierButtons.forEach((button) => {
+        const visible = button.dataset.dossierType === activeType;
+        button.hidden = !visible;
+      });
+    };
+
+    const syncTypeButtons = () => {
+      typeButtons.forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.typeButton === activeType);
+      });
+    };
+
+    const setSelectedDossier = async (dossierId) => {
+      const dossier = dossierMap.get(dossierId);
+      if (!dossier) return;
+
+      activeDossierId = dossier.id;
+      dossierButtons.forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.dossierItem === dossier.id);
+      });
+
+      if (assetNode) assetNode.textContent = dossier.asset;
+      if (typeNode) typeNode.textContent = dossier.typeLabel;
+      if (dateNode) dateNode.textContent = dossier.dateDisplay;
+      if (thesisNode) thesisNode.textContent = dossier.thesis || dossier.excerpt;
+      if (fileIdNode) fileIdNode.textContent = dossier.fileId;
+      if (linkNode) linkNode.href = dossier.url;
+      if (symbolNode) symbolNode.textContent = dossier.tradingviewSymbol;
+      if (symbolNodeSecondary) symbolNodeSecondary.textContent = dossier.tradingviewSymbol;
+      if (primaryIntervalNode) primaryIntervalNode.textContent = dossier.tradingviewTimeframes[0];
+      if (secondaryIntervalNode) secondaryIntervalNode.textContent = dossier.tradingviewTimeframes[1];
+
+      await renderWidgets(dossier);
+    };
+
+    const setActiveType = async (type) => {
+      activeType = type;
+      syncTypeButtons();
+      updateFeedVisibility();
+      const nextDossier = dossiers.find((dossier) => dossier.type === type);
+      if (nextDossier) {
+        await setSelectedDossier(nextDossier.id);
+      }
+    };
+
+    typeButtons.forEach((button) => {
+      button.addEventListener("click", async () => {
+        const nextType = button.dataset.typeButton;
+        if (!nextType || nextType === activeType) return;
+        await setActiveType(nextType);
+      });
+    });
+
+    dossierButtons.forEach((button) => {
+      button.addEventListener("click", async () => {
+        const nextId = button.dataset.dossierItem;
+        if (!nextId || nextId === activeDossierId) return;
+        await setSelectedDossier(nextId);
+      });
+    });
+
+    updateFeedVisibility();
+    syncTypeButtons();
+    void setActiveType(initialType);
+  };
+
+  if (!window.__matrixArchiveInit) {
+    window.__matrixArchiveInit = true;
+    document.addEventListener("astro:page-load", initArchiveConsole);
+    initArchiveConsole();
+  } else {
+    initArchiveConsole();
+  }
+</script>
