@@ -23,6 +23,8 @@ interface Props {
 }
 
 const { dossiers, types, initialType } = Astro.props;
+const initialDossier =
+  dossiers.find((dossier) => dossier.type === initialType) ?? dossiers[0];
 ---
 
 <section class="archive-console" data-archive-console>
@@ -53,12 +55,19 @@ const { dossiers, types, initialType } = Astro.props;
     <ConsolePanel title="RECENT DOSSIERS" className="archive-console__feed">
       <div class="feed-list">
         {
-          dossiers.map((dossier, index) => (
+          dossiers.map((dossier) => (
             <button
               type="button"
-              class:list={["feed-item", { "is-active": index === 0 }]}
+              class:list={[
+                "feed-item",
+                {
+                  "is-active": dossier.id === initialDossier?.id,
+                  "is-hidden": dossier.type !== initialType
+                }
+              ]}
               data-dossier-item={dossier.id}
               data-dossier-type={dossier.type}
+              hidden={dossier.type !== initialType}
             >
               <span class="feed-item__row">
                 <span class="feed-item__asset">{dossier.asset}</span>
@@ -76,16 +85,22 @@ const { dossiers, types, initialType } = Astro.props;
       <div class="detail-stack">
         <div class="widget-shell">
           <div class="widget-shell__header">
-            <span data-detail-symbol>--</span>
-            <span data-detail-interval-primary>--</span>
+            <span data-detail-symbol>{initialDossier?.tradingviewSymbol ?? "--"}</span>
+            <span data-detail-interval-primary>
+              {initialDossier?.tradingviewTimeframes[0] ?? "--"}
+            </span>
           </div>
           <div class="tv-chart" id="tv-primary"></div>
         </div>
 
         <div class="widget-shell">
           <div class="widget-shell__header">
-            <span data-detail-symbol-secondary>--</span>
-            <span data-detail-interval-secondary>--</span>
+            <span data-detail-symbol-secondary>
+              {initialDossier?.tradingviewSymbol ?? "--"}
+            </span>
+            <span data-detail-interval-secondary>
+              {initialDossier?.tradingviewTimeframes[1] ?? "--"}
+            </span>
           </div>
           <div class="tv-chart" id="tv-secondary"></div>
         </div>
@@ -93,27 +108,29 @@ const { dossiers, types, initialType } = Astro.props;
         <div class="detail-meta">
           <div class="detail-meta__row">
             <span>ASSET</span>
-            <strong data-detail-asset>--</strong>
+            <strong data-detail-asset>{initialDossier?.asset ?? "--"}</strong>
           </div>
           <div class="detail-meta__row">
             <span>TYPE</span>
-            <strong data-detail-type>--</strong>
+            <strong data-detail-type>{initialDossier?.typeLabel ?? "--"}</strong>
           </div>
           <div class="detail-meta__row">
             <span>UPDATED</span>
-            <strong data-detail-date>--</strong>
+            <strong data-detail-date>{initialDossier?.dateDisplay ?? "--"}</strong>
           </div>
           <div class="detail-meta__row detail-meta__row--stack">
             <span>THESIS</span>
-            <p data-detail-thesis>--</p>
+            <p data-detail-thesis>
+              {initialDossier?.thesis ?? initialDossier?.excerpt ?? "--"}
+            </p>
           </div>
           <div class="detail-meta__row detail-meta__row--stack">
             <span>FILE ID</span>
-            <strong data-detail-fileid>--</strong>
+            <strong data-detail-fileid>{initialDossier?.fileId ?? "--"}</strong>
           </div>
         </div>
 
-        <a class="action-link" href="#" data-detail-link>
+        <a class="action-link" href={initialDossier?.url ?? "#"} data-detail-link>
           <span>OPEN DOSSIER</span>
           <span aria-hidden="true">-&gt;</span>
         </a>
@@ -222,6 +239,7 @@ const { dossiers, types, initialType } = Astro.props;
       dossierButtons.forEach((button) => {
         const visible = button.dataset.dossierType === activeType;
         button.hidden = !visible;
+        button.classList.toggle("is-hidden", !visible);
       });
     };
 

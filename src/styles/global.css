@@ -393,6 +393,10 @@ img {
   box-shadow: 0 0 26px rgba(141, 255, 180, 0.08);
 }
 
+.feed-item.is-hidden {
+  display: none;
+}
+
 .feed-item__row {
   display: flex;
   justify-content: space-between;
