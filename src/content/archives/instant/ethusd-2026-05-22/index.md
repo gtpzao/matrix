@@ -5,14 +5,15 @@ asset: "ETHUSD"
 date: 2026-05-22
 excerpt: "Pullback curto encosta em suporte intraday. Leitura rapida de reacao e invalidacao."
 thesis: "Setup tatico depende de defesa no suporte imediato e reclaim da faixa de valor curta."
-cover: "/images/dossiers/ethusd-instant-cover.svg"
+cover: "/images/archives/ethusd-instant-cover.svg"
 markdownDownload: "/files/ethusd-instant-2026-05-22.md"
 tradingviewSymbol: "CRYPTO:ETHUSD"
 tradingviewTimeframes:
-  - "30"
-  - "5"
+  - "240"
+  - "120"
+  - "60"
 slideImages:
-  - "/images/dossiers/ethusd-instant-cover.svg"
+  - "/images/archives/ethusd-instant-cover.svg"
 featured: false
 status: "active"
 ---

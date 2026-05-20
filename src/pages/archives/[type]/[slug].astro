@@ -1,15 +1,15 @@
 ---
 import { getCollection, render } from "astro:content";
+import ArchiveDeck from "../../../components/ArchiveDeck.astro";
 import ConsolePanel from "../../../components/ConsolePanel.astro";
-import DossierDeck from "../../../components/DossierDeck.astro";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
-import { dossierSlug, dossierType, resolveDossier, sortDossiers } from "../../../lib/dossiers";
+import { archiveSlug, archiveType, resolveArchive, sortArchives } from "../../../lib/archives";
 
 export async function getStaticPaths() {
-  const entries = sortDossiers(await getCollection("dossiers"));
+  const entries = sortArchives(await getCollection("archives"));
 
   return entries.map((entry) => {
-    const resolved = resolveDossier(entry);
+    const resolved = resolveArchive(entry);
     return {
       params: {
         type: resolved.type,
@@ -28,34 +28,34 @@ const archiveHref = `/archive?${new URLSearchParams({
 }).toString()}`;
 
 if (
-  dossierType(entry) !== Astro.params.type ||
-  dossierSlug(entry) !== Astro.params.slug
+  archiveType(entry) !== Astro.params.type ||
+  archiveSlug(entry) !== Astro.params.slug
 ) {
-  throw new Error("Dossier route mismatch.");
+  throw new Error("Archive route mismatch.");
 }
 ---
 
 <BaseLayout
-  title={`${entry.data.title} | Matrix Dossier`}
+  title={`${entry.data.title} | Matrix Archive`}
   description={entry.data.excerpt}
-  pageClass="page-dossier"
+  pageClass="page-archive-file"
 >
-  <main class="dossier-shell site-shell">
-    <div class="dossier-topbar">
+  <main class="archive-file-shell site-shell">
+    <div class="archive-file-topbar">
       <a class="action-link action-link--back" href={archiveHref}>
         <span>&lt;- ARCHIVE</span>
       </a>
-      <span class="dossier-topbar__id">{resolved.fileId}</span>
+      <span class="archive-file-topbar__id">{resolved.fileId}</span>
     </div>
 
-    <section class="dossier-hero">
-      <div class="dossier-hero__copy">
-        <p class="eyebrow">[ DOSSIER FILE ]</p>
+    <section class="archive-file-hero">
+      <div class="archive-file-hero__copy">
+        <p class="eyebrow">[ ARCHIVE FILE ]</p>
         <h1>{entry.data.title}</h1>
-        <p class="dossier-hero__thesis">{entry.data.thesis ?? entry.data.excerpt}</p>
+        <p class="archive-file-hero__thesis">{entry.data.thesis ?? entry.data.excerpt}</p>
       </div>
 
-      <div class="dossier-hero__facts">
+      <div class="archive-file-hero__facts">
         <span>
           ASSET
           <strong>{entry.data.asset}</strong>
@@ -71,9 +71,9 @@ if (
       </div>
     </section>
 
-    <section class="dossier-showcase">
-      <div class="dossier-showcase__media">
-        <DossierDeck
+    <section class="archive-file-showcase">
+      <div class="archive-file-showcase__media">
+        <ArchiveDeck
           title={entry.data.title}
           asset={entry.data.asset}
           type={entry.data.type}
@@ -83,9 +83,9 @@ if (
         />
       </div>
 
-      <aside class="dossier-showcase__meta">
+      <aside class="archive-file-showcase__meta">
         <ConsolePanel title="THESIS">
-          <p class="console-copy">{entry.data.excerpt}</p>
+          <p class="console-copy">{entry.data.thesis ?? entry.data.excerpt}</p>
         </ConsolePanel>
 
         <ConsolePanel title="DOWNLOADS">
@@ -109,30 +109,30 @@ if (
           </div>
         </ConsolePanel>
 
-        <ConsolePanel title="LIVE MAP">
+        <ConsolePanel title="TIMEFRAMES">
           <div class="detail-meta">
             <div class="detail-meta__row">
               <span>SYMBOL</span>
               <strong>{entry.data.tradingviewSymbol}</strong>
             </div>
-            <div class="detail-meta__row">
-              <span>TF-01</span>
-              <strong>{entry.data.tradingviewTimeframes[0]}</strong>
-            </div>
-            <div class="detail-meta__row">
-              <span>TF-02</span>
-              <strong>{entry.data.tradingviewTimeframes[1]}</strong>
-            </div>
+            {
+              entry.data.tradingviewTimeframes.map((timeframe, index) => (
+                <div class="detail-meta__row">
+                  <span>{index === 0 ? "TF-01" : index === 1 ? "TF-02" : "TF-03"}</span>
+                  <strong>{timeframe}</strong>
+                </div>
+              ))
+            }
           </div>
           <a class="action-link" href={archiveHref}>
-            <span>OPEN LIVE CONSOLE</span>
+            <span>OPEN ARCHIVE CONSOLE</span>
             <span aria-hidden="true">-&gt;</span>
           </a>
         </ConsolePanel>
       </aside>
     </section>
 
-    <ConsolePanel title="WRITTEN DOSSIER" className="dossier-article">
+    <ConsolePanel title="WRITTEN ARCHIVE" className="archive-article">
       <article class="prose">
         <Content />
       </article>

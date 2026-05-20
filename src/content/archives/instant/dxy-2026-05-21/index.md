@@ -5,14 +5,15 @@ asset: "DXY"
 date: 2026-05-21
 excerpt: "Indice testa resistencia local depois de impulso forte. Mapa rapido de continuidade ou exaustao."
 thesis: "Acima da resistencia local, impulso segue vivo. Rejeicao forte devolve preco ao equilibrio curto."
-cover: "/images/dossiers/dxy-instant-cover.svg"
+cover: "/images/archives/dxy-instant-cover.svg"
 markdownDownload: "/files/dxy-instant-2026-05-21.md"
 tradingviewSymbol: "INDEX:DXY"
 tradingviewTimeframes:
-  - "D"
-  - "W"
+  - "240"
+  - "120"
+  - "60"
 slideImages:
-  - "/images/dossiers/dxy-instant-cover.svg"
+  - "/images/archives/dxy-instant-cover.svg"
 featured: false
 status: "active"
 ---

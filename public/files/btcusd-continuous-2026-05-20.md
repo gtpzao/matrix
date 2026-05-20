@@ -1,11 +1,11 @@
-# TOP DOWN // BTCUSD
+# CONTINUOUS // BTCUSD
 
 ## Conteúdo escrito da apresentação
 
 
 ---
 
-## Slide 1 — TOP DOWN // BTCUSD // MENSAL
+## Slide 1 — CONTINUOUS // BTCUSD // MENSAL
 
 ### A ESTRUTURA MACRO AINDA MANDA NO JOGO
 
@@ -14,7 +14,7 @@ No mensal, o Bitcoin segue acima da grande base histórica e preserva a leitura 
 
 ---
 
-## Slide 2 — TOP DOWN // BTCUSD // SEMANAL
+## Slide 2 — CONTINUOUS // BTCUSD // SEMANAL
 
 ### CORREÇÃO MACRO, MAS SEM QUEBRA TOTAL DA ESTRUTURA
 
@@ -23,7 +23,7 @@ No semanal, o preço perde força depois de trabalhar em áreas mais altas e ent
 
 ---
 
-## Slide 3 — TOP DOWN // BTCUSD // DIÁRIO
+## Slide 3 — CONTINUOUS // BTCUSD // DIÁRIO
 
 ### A BATALHA ENTRE REPIQUE E CONTINUIDADE DE BAIXA
 
@@ -32,7 +32,7 @@ No diário, a estrutura ainda mostra topos e fundos pressionados para baixo apó
 
 ---
 
-## Slide 4 — TOP DOWN // BTCUSD // 4 HORAS
+## Slide 4 — CONTINUOUS // BTCUSD // 4 HORAS
 
 ### O PREÇO PERDEU O PIVÔ E AGORA TENTA ESTABILIZAR
 
@@ -41,7 +41,7 @@ No 4H, a leitura fica mais objetiva: o mercado perdeu níveis intermediários, f
 
 ---
 
-## Slide 5 — TOP DOWN // BTCUSD // 2 HORAS
+## Slide 5 — CONTINUOUS // BTCUSD // 2 HORAS
 
 ### ESCADA DE BAIXA E COMPRESSÃO PERTO DO FUNDO
 
@@ -50,7 +50,7 @@ No 2H, fica claro o comportamento de lower highs e lower lows, com o preço esco
 
 ---
 
-## Slide 6 — TOP DOWN // BTCUSD // 1 HORA
+## Slide 6 — CONTINUOUS // BTCUSD // 1 HORA
 
 ### FLUXO INTRADAY BAIXISTA COM REAÇÕES CADA VEZ MAIS CURTAS
 
@@ -59,7 +59,7 @@ No 1H, o mercado mostra um fluxo vendedor mais evidente: impulsos de queda, repi
 
 ---
 
-## Slide 7 — TOP DOWN // BTCUSD // 30 MINUTOS
+## Slide 7 — CONTINUOUS // BTCUSD // 30 MINUTOS
 
 ### A MICROESTRUTURA MOSTRA ONDE O GATILHO VAI NASCER
 

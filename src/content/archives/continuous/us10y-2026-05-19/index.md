@@ -1,21 +1,22 @@
 ---
 title: "US10Y // PANELA DE PRESSAO"
-type: "topdown"
+type: "continuous"
 asset: "US10Y"
 date: 2026-05-19
 excerpt: "Entre 4% e 5%, o Treasury de 10 anos comprime energia para um teste estrutural decisivo."
 thesis: "Vies principal altista enquanto 4,40% segurar. Confirmacao real vem com aceitacao acima de 5,02%."
-cover: "/images/dossiers/us10y-topdown-cover.svg"
-pptx: "/files/us10y-topdown-2026-05-19.pptx"
-markdownDownload: "/files/us10y-topdown-2026-05-19.md"
+cover: "/images/archives/us10y-continuous-cover.svg"
+pptx: "/files/us10y-continuous-2026-05-19.pptx"
+markdownDownload: "/files/us10y-continuous-2026-05-19.md"
 tradingviewSymbol: "TVC:US10Y"
 tradingviewTimeframes:
+  - "M"
   - "W"
   - "D"
 slideImages:
-  - "/images/dossiers/us10y-topdown-slide-01.svg"
-  - "/images/dossiers/us10y-topdown-slide-02.svg"
-  - "/images/dossiers/us10y-topdown-slide-03.svg"
+  - "/images/archives/us10y-continuous-slide-01.svg"
+  - "/images/archives/us10y-continuous-slide-02.svg"
+  - "/images/archives/us10y-continuous-slide-03.svg"
 featured: true
 status: "active"
 ---

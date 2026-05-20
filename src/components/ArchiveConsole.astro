@@ -1,7 +1,7 @@
 ---
 import ConsolePanel from "./ConsolePanel.astro";
 
-export type ArchiveDossier = {
+type ArchiveRenderable = {
   id: string;
   slug: string;
   type: string;
@@ -15,22 +15,34 @@ export type ArchiveDossier = {
   fileId: string;
   tradingviewSymbol: string;
   tradingviewTimeframes: string[];
+  Content: any;
 };
 
 interface Props {
-  dossiers: ArchiveDossier[];
+  archives: ArchiveRenderable[];
   types: string[];
   initialType: string;
 }
 
-const { dossiers, types, initialType } = Astro.props;
-const initialDossier =
-  dossiers.find((dossier) => dossier.type === initialType) ?? dossiers[0];
+const { archives, types, initialType } = Astro.props;
+
+const typeCopy: Record<string, string> = {
+  continuous: "everlasting",
+  instant: "immediate"
+};
+
+const timeframeDefaults: Record<string, string[]> = {
+  continuous: ["M", "W", "D"],
+  instant: ["240", "120", "60"]
+};
+
+const archiveIndex = archives.map(({ Content, ...archive }) => archive);
+const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
 ---
 
 <section class="archive-console" data-archive-console>
   <div class="archive-console__grid">
-    <ConsolePanel title="DOSSIER TYPES" className="archive-console__types">
+    <ConsolePanel title="TYPES" className="archive-console__types">
       <div class="type-list">
         {
           types.map((type) => (
@@ -40,99 +52,95 @@ const initialDossier =
               data-type-button={type}
             >
               <span class="type-button__title">{type.toUpperCase()}</span>
-              <span class="type-button__copy">
-                {type === "topdown"
-                  ? "multi-timeframe structural readings"
-                  : type === "instant"
-                    ? "fast tactical snapshots"
-                    : "dynamic archive branch"}
-              </span>
+              <span class="type-button__copy">{typeCopy[type] ?? "branch active"}</span>
             </button>
           ))
         }
       </div>
     </ConsolePanel>
 
-    <ConsolePanel title="RECENT DOSSIERS" className="archive-console__feed">
+    <ConsolePanel title="RECENT" className="archive-console__feed">
       <div class="feed-list">
         {
-          dossiers.map((dossier) => (
-            <button
-              type="button"
+          archives.map(({ Content, ...archive }, order) => (
+            <article
               class:list={[
-                "feed-item",
-                {
-                  "is-active": dossier.id === initialDossier?.id,
-                  "is-hidden": dossier.type !== initialType
-                }
+                "archive-item",
+                { "is-hidden": archive.type !== initialType }
               ]}
-              data-dossier-item={dossier.id}
-              data-dossier-type={dossier.type}
-              hidden={dossier.type !== initialType}
+              data-archive-item={archive.id}
+              data-archive-type={archive.type}
+              data-archive-order={order}
+              hidden={archive.type !== initialType}
             >
-              <span class="feed-item__row">
-                <span class="feed-item__asset">{dossier.asset}</span>
-                <span class="feed-item__date">{dossier.dateDisplay}</span>
-              </span>
-              <span class="feed-item__title">{dossier.title}</span>
-              <span class="feed-item__excerpt">{dossier.excerpt}</span>
-            </button>
+              <button
+                type="button"
+                class="archive-item__toggle"
+                aria-expanded="false"
+                data-archive-toggle={archive.id}
+              >
+                <span class="archive-item__topline">
+                  <span class="archive-item__asset">{archive.asset}</span>
+                  <span class="archive-item__date">{archive.dateDisplay}</span>
+                </span>
+                <span class="archive-item__title">{archive.title}</span>
+                <span class="archive-item__excerpt">{archive.excerpt}</span>
+                <span class="archive-item__indicator" aria-hidden="true">+</span>
+              </button>
+
+              <div class="archive-item__body" data-archive-body={archive.id} hidden>
+                <article class="archive-item__content prose prose--archive">
+                  <Content />
+                </article>
+              </div>
+            </article>
           ))
         }
       </div>
     </ConsolePanel>
 
-    <ConsolePanel title="LIVE STRUCTURE" className="archive-console__detail">
+    <ConsolePanel title="ASSET" className="archive-console__detail">
       <div class="detail-stack">
-        <div class="widget-shell">
-          <div class="widget-shell__header">
-            <span data-detail-symbol>{initialDossier?.tradingviewSymbol ?? "--"}</span>
-            <span data-detail-interval-primary>
-              {initialDossier?.tradingviewTimeframes[0] ?? "--"}
-            </span>
-          </div>
-          <div class="tv-chart" id="tv-primary"></div>
-        </div>
+        {
+          [0, 1, 2].map((index) => (
+            <div class="widget-shell widget-shell--archive">
+              <div class="widget-shell__header">
+                <span data-detail-symbol={index}>--</span>
+                <span data-detail-interval={index}>{initialIntervals[index] ?? "--"}</span>
+              </div>
+              <div class="tv-chart tv-chart--compact" data-detail-chart={index}>
+                <div class="tv-chart__fallback">SELECT ARCHIVE</div>
+              </div>
+            </div>
+          ))
+        }
 
-        <div class="widget-shell">
-          <div class="widget-shell__header">
-            <span data-detail-symbol-secondary>
-              {initialDossier?.tradingviewSymbol ?? "--"}
-            </span>
-            <span data-detail-interval-secondary>
-              {initialDossier?.tradingviewTimeframes[1] ?? "--"}
-            </span>
-          </div>
-          <div class="tv-chart" id="tv-secondary"></div>
-        </div>
-
-        <div class="detail-meta">
+        <div class="detail-meta detail-meta--archive">
           <div class="detail-meta__row">
             <span>ASSET</span>
-            <strong data-detail-asset>{initialDossier?.asset ?? "--"}</strong>
+            <strong data-detail-asset>--</strong>
           </div>
           <div class="detail-meta__row">
             <span>TYPE</span>
-            <strong data-detail-type>{initialDossier?.typeLabel ?? "--"}</strong>
+            <strong data-detail-type>{initialType.toUpperCase()}</strong>
           </div>
           <div class="detail-meta__row">
             <span>UPDATED</span>
-            <strong data-detail-date>{initialDossier?.dateDisplay ?? "--"}</strong>
-          </div>
-          <div class="detail-meta__row detail-meta__row--stack">
-            <span>THESIS</span>
-            <p data-detail-thesis>
-              {initialDossier?.thesis ?? initialDossier?.excerpt ?? "--"}
-            </p>
+            <strong data-detail-date>--</strong>
           </div>
           <div class="detail-meta__row detail-meta__row--stack">
             <span>FILE ID</span>
-            <strong data-detail-fileid>{initialDossier?.fileId ?? "--"}</strong>
+            <strong data-detail-fileid>--</strong>
           </div>
         </div>
 
-        <a class="action-link" href={initialDossier?.url ?? "#"} data-detail-link>
-          <span>OPEN DOSSIER</span>
+        <a
+          class="action-link action-link--disabled"
+          href="#"
+          aria-disabled="true"
+          data-detail-link
+        >
+          <span>OPEN ARCHIVE</span>
           <span aria-hidden="true">-&gt;</span>
         </a>
       </div>
@@ -140,64 +148,91 @@ const initialDossier =
   </div>
 </section>
 
-<script is:inline define:vars={{ dossiers, initialType, types }}>
+<script is:inline define:vars={{ archiveIndex, initialType, types, timeframeDefaults }}>
   const initArchiveConsole = () => {
     const root = document.querySelector("[data-archive-console]");
-    if (!root) return;
+    if (!root || root.dataset.archiveBound === "true") return;
+    root.dataset.archiveBound = "true";
 
     const typeButtons = [...root.querySelectorAll("[data-type-button]")];
-    const dossierButtons = [...root.querySelectorAll("[data-dossier-item]")];
+    const archiveItems = [...root.querySelectorAll("[data-archive-item]")];
+    const toggleButtons = [...root.querySelectorAll("[data-archive-toggle]")];
+    const bodyNodes = [...root.querySelectorAll("[data-archive-body]")];
+    const chartNodes = [...root.querySelectorAll("[data-detail-chart]")];
+    const symbolNodes = [...root.querySelectorAll("[data-detail-symbol]")];
+    const intervalNodes = [...root.querySelectorAll("[data-detail-interval]")];
     const assetNode = root.querySelector("[data-detail-asset]");
     const typeNode = root.querySelector("[data-detail-type]");
     const dateNode = root.querySelector("[data-detail-date]");
-    const thesisNode = root.querySelector("[data-detail-thesis]");
     const fileIdNode = root.querySelector("[data-detail-fileid]");
     const linkNode = root.querySelector("[data-detail-link]");
-    const symbolNode = root.querySelector("[data-detail-symbol]");
-    const symbolNodeSecondary = root.querySelector("[data-detail-symbol-secondary]");
-    const primaryIntervalNode = root.querySelector("[data-detail-interval-primary]");
-    const secondaryIntervalNode = root.querySelector("[data-detail-interval-secondary]");
-    const primaryChart = root.querySelector("#tv-primary");
-    const secondaryChart = root.querySelector("#tv-secondary");
-    const defaultDossier =
-      dossiers.find((dossier) => dossier.type === initialType) ?? dossiers[0];
 
-    const resolveInitialSelection = () => {
-      const params = new URLSearchParams(window.location.search);
-      const requestedType = params.get("type");
-      const requestedSlug = params.get("slug");
+    const archiveMap = new Map(archiveIndex.map((archive) => [archive.id, archive]));
+    const itemMap = new Map(
+      archiveItems.map((item) => [item.dataset.archiveItem, item])
+    );
+    const bodyMap = new Map(
+      bodyNodes.map((body) => [body.dataset.archiveBody, body])
+    );
+    const toggleMap = new Map(
+      toggleButtons.map((button) => [button.dataset.archiveToggle, button])
+    );
 
-      const dossierFromSlug = requestedSlug
-        ? dossiers.find((dossier) => dossier.slug === requestedSlug)
-        : null;
-      const typeFromQuery = types.includes(requestedType ?? "")
-        ? requestedType
-        : dossierFromSlug?.type ?? initialType;
-      const dossierFromQuery = requestedSlug
-        ? dossiers.find(
-            (dossier) =>
-              dossier.slug === requestedSlug && dossier.type === typeFromQuery
-          )
-        : null;
+    const defaultIntervalsForType = (type) =>
+      timeframeDefaults[type] ?? ["--", "--", "--"];
 
-      return {
-        type: typeFromQuery,
-        dossierId: dossierFromQuery?.id ?? null
-      };
+    const getVisibleLimit = () =>
+      window.matchMedia("(max-width: 840px)").matches ? 15 : 30;
+
+    const renderWidgetFallback = (label) => {
+      chartNodes.forEach((node) => {
+        node.innerHTML = `<div class="tv-chart__fallback">${label}</div>`;
+      });
+    };
+
+    const setDetailIntervals = (intervals) => {
+      intervalNodes.forEach((node, index) => {
+        node.textContent = intervals[index] ?? "--";
+      });
+    };
+
+    const setDetailSymbol = (symbol) => {
+      symbolNodes.forEach((node) => {
+        node.textContent = symbol ?? "--";
+      });
+    };
+
+    const syncTypeButtons = () => {
+      typeButtons.forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.typeButton === activeType);
+      });
+    };
+
+    const collapseArchive = (archiveId) => {
+      const item = itemMap.get(archiveId);
+      const body = bodyMap.get(archiveId);
+      const toggle = toggleMap.get(archiveId);
+
+      if (item) item.classList.remove("is-active");
+      if (body) body.hidden = true;
+      if (toggle) toggle.setAttribute("aria-expanded", "false");
+    };
+
+    const collapseAll = () => {
+      archiveIndex.forEach((archive) => collapseArchive(archive.id));
     };
 
     const syncArchiveLocation = () => {
-      const activeDossier = activeDossierId ? dossierMap.get(activeDossierId) : null;
-      const isDefaultSelection =
-        activeType === initialType && activeDossier?.id === defaultDossier?.id;
       const params = new URLSearchParams(window.location.search);
+      const activeArchive = activeArchiveId ? archiveMap.get(activeArchiveId) : null;
+      const isDefaultState = activeType === initialType && !activeArchive;
       let nextUrl = window.location.pathname;
 
-      if (!isDefaultSelection) {
+      if (!isDefaultState) {
         params.set("type", activeType);
 
-        if (activeDossier?.slug) {
-          params.set("slug", activeDossier.slug);
+        if (activeArchive?.slug) {
+          params.set("slug", activeArchive.slug);
         } else {
           params.delete("slug");
         }
@@ -211,12 +246,32 @@ const initialDossier =
       window.history.replaceState(window.history.state, "", nextUrl);
     };
 
-    const initialSelection = resolveInitialSelection();
+    const resolveInitialSelection = () => {
+      const params = new URLSearchParams(window.location.search);
+      const requestedType = params.get("type");
+      const requestedSlug = params.get("slug");
+      const archiveFromSlug = requestedSlug
+        ? archiveIndex.find((archive) => archive.slug === requestedSlug)
+        : null;
+      const typeFromQuery = types.includes(requestedType ?? "")
+        ? requestedType
+        : archiveFromSlug?.type ?? initialType;
+      const archiveFromQuery = requestedSlug
+        ? archiveIndex.find(
+            (archive) =>
+              archive.slug === requestedSlug && archive.type === typeFromQuery
+          )
+        : null;
 
-    let activeType = initialSelection.type;
-    let activeDossierId = initialSelection.dossierId;
+      return {
+        type: typeFromQuery,
+        archiveId: archiveFromQuery?.id ?? null
+      };
+    };
 
-    const dossierMap = new Map(dossiers.map((dossier) => [dossier.id, dossier]));
+    let widgetRenderNonce = 0;
+    let activeType = initialType;
+    let activeArchiveId = null;
 
     const ensureTradingView = async () => {
       if (window.TradingView?.widget) return true;
@@ -245,25 +300,26 @@ const initialDossier =
       return Boolean(window.TradingView?.widget);
     };
 
-    const renderWidgets = async (dossier) => {
-      if (!primaryChart || !secondaryChart) return;
-      primaryChart.innerHTML = "";
-      secondaryChart.innerHTML = "";
+    const renderWidgets = async (archive) => {
+      const nonce = ++widgetRenderNonce;
 
-      const tvReady = await ensureTradingView();
-      if (!tvReady) {
-        primaryChart.innerHTML =
-          '<div class="tv-chart__fallback">TRADINGVIEW UNAVAILABLE</div>';
-        secondaryChart.innerHTML =
-          '<div class="tv-chart__fallback">TRADINGVIEW UNAVAILABLE</div>';
+      if (!archive) {
+        renderWidgetFallback("SELECT ARCHIVE");
         return;
       }
 
-      primaryChart.innerHTML = '<div id="tv-primary-frame"></div>';
-      secondaryChart.innerHTML = '<div id="tv-secondary-frame"></div>';
+      chartNodes.forEach((node) => {
+        node.innerHTML = "";
+      });
+
+      const tvReady = await ensureTradingView();
+      if (!tvReady || nonce !== widgetRenderNonce) {
+        renderWidgetFallback("TRADINGVIEW UNAVAILABLE");
+        return;
+      }
 
       const commonConfig = {
-        symbol: dossier.tradingviewSymbol,
+        symbol: archive.tradingviewSymbol,
         theme: "dark",
         style: "1",
         locale: "en",
@@ -276,69 +332,95 @@ const initialDossier =
         gridColor: "rgba(157,255,191,0.08)"
       };
 
-      new window.TradingView.widget({
-        ...commonConfig,
-        interval: dossier.tradingviewTimeframes[0],
-        container_id: "tv-primary-frame"
-      });
+      chartNodes.forEach((node, index) => {
+        const frameId = `tv-archive-${index}`;
+        node.innerHTML = `<div id="${frameId}"></div>`;
 
-      new window.TradingView.widget({
-        ...commonConfig,
-        interval: dossier.tradingviewTimeframes[1],
-        container_id: "tv-secondary-frame"
+        new window.TradingView.widget({
+          ...commonConfig,
+          interval: archive.tradingviewTimeframes[index],
+          container_id: frameId
+        });
       });
+    };
+
+    const clearDetail = async () => {
+      activeArchiveId = null;
+      if (assetNode) assetNode.textContent = "--";
+      if (typeNode) typeNode.textContent = activeType.toUpperCase();
+      if (dateNode) dateNode.textContent = "--";
+      if (fileIdNode) fileIdNode.textContent = "--";
+      if (linkNode) {
+        linkNode.href = "#";
+        linkNode.setAttribute("aria-disabled", "true");
+        linkNode.classList.add("action-link--disabled");
+      }
+
+      setDetailSymbol("--");
+      setDetailIntervals(defaultIntervalsForType(activeType));
+      syncArchiveLocation();
+      await renderWidgets(null);
     };
 
     const updateFeedVisibility = () => {
-      dossierButtons.forEach((button) => {
-        const visible = button.dataset.dossierType === activeType;
-        button.hidden = !visible;
-        button.classList.toggle("is-hidden", !visible);
+      let shown = 0;
+      const visibleLimit = getVisibleLimit();
+
+      archiveItems.forEach((item) => {
+        const matchesType = item.dataset.archiveType === activeType;
+        const visible = matchesType && shown < visibleLimit;
+
+        item.hidden = !visible;
+        item.classList.toggle("is-hidden", !visible);
+
+        if (matchesType) {
+          shown += 1;
+        }
       });
+
+      const activeItem = activeArchiveId ? itemMap.get(activeArchiveId) : null;
+      if (activeItem?.hidden) {
+        collapseAll();
+        void clearDetail();
+      }
     };
 
-    const syncTypeButtons = () => {
-      typeButtons.forEach((button) => {
-        button.classList.toggle("is-active", button.dataset.typeButton === activeType);
-      });
-    };
+    const openArchive = async (archiveId) => {
+      const archive = archiveMap.get(archiveId);
+      const item = itemMap.get(archiveId);
+      const body = bodyMap.get(archiveId);
+      const toggle = toggleMap.get(archiveId);
 
-    const setSelectedDossier = async (dossierId) => {
-      const dossier = dossierMap.get(dossierId);
-      if (!dossier) return;
+      if (!archive || !item || !body || !toggle) return;
 
-      activeDossierId = dossier.id;
-      dossierButtons.forEach((button) => {
-        button.classList.toggle("is-active", button.dataset.dossierItem === dossier.id);
-      });
+      collapseAll();
+      activeArchiveId = archive.id;
+      item.classList.add("is-active");
+      body.hidden = false;
+      toggle.setAttribute("aria-expanded", "true");
 
-      if (assetNode) assetNode.textContent = dossier.asset;
-      if (typeNode) typeNode.textContent = dossier.typeLabel;
-      if (dateNode) dateNode.textContent = dossier.dateDisplay;
-      if (thesisNode) thesisNode.textContent = dossier.thesis || dossier.excerpt;
-      if (fileIdNode) fileIdNode.textContent = dossier.fileId;
-      if (linkNode) linkNode.href = dossier.url;
-      if (symbolNode) symbolNode.textContent = dossier.tradingviewSymbol;
-      if (symbolNodeSecondary) symbolNodeSecondary.textContent = dossier.tradingviewSymbol;
-      if (primaryIntervalNode) primaryIntervalNode.textContent = dossier.tradingviewTimeframes[0];
-      if (secondaryIntervalNode) secondaryIntervalNode.textContent = dossier.tradingviewTimeframes[1];
+      if (assetNode) assetNode.textContent = archive.asset;
+      if (typeNode) typeNode.textContent = archive.typeLabel;
+      if (dateNode) dateNode.textContent = archive.dateDisplay;
+      if (fileIdNode) fileIdNode.textContent = archive.fileId;
+      if (linkNode) {
+        linkNode.href = archive.url;
+        linkNode.removeAttribute("aria-disabled");
+        linkNode.classList.remove("action-link--disabled");
+      }
 
+      setDetailSymbol(archive.tradingviewSymbol);
+      setDetailIntervals(archive.tradingviewTimeframes);
       syncArchiveLocation();
-      await renderWidgets(dossier);
+      await renderWidgets(archive);
     };
 
-    const setActiveType = async (type, preferredDossierId = null) => {
+    const setActiveType = async (type) => {
       activeType = type;
+      collapseAll();
       syncTypeButtons();
       updateFeedVisibility();
-      const nextDossier =
-        dossiers.find(
-          (dossier) =>
-            dossier.type === type && dossier.id === preferredDossierId
-        ) ?? dossiers.find((dossier) => dossier.type === type);
-      if (nextDossier) {
-        await setSelectedDossier(nextDossier.id);
-      }
+      await clearDetail();
     };
 
     typeButtons.forEach((button) => {
@@ -349,21 +431,39 @@ const initialDossier =
       });
     });
 
-    dossierButtons.forEach((button) => {
+    toggleButtons.forEach((button) => {
       button.addEventListener("click", async () => {
-        const nextId = button.dataset.dossierItem;
-        if (!nextId || nextId === activeDossierId) return;
-        await setSelectedDossier(nextId);
+        const archiveId = button.dataset.archiveToggle;
+        if (!archiveId) return;
+
+        if (activeArchiveId === archiveId) {
+          collapseArchive(archiveId);
+          await clearDetail();
+          return;
+        }
+
+        await openArchive(archiveId);
       });
     });
 
-    updateFeedVisibility();
+    const initialSelection = resolveInitialSelection();
+    activeType = initialSelection.type;
+
     syncTypeButtons();
-    void setActiveType(initialSelection.type, initialSelection.dossierId);
+    updateFeedVisibility();
+    void clearDetail().then(async () => {
+      if (initialSelection.archiveId) {
+        await openArchive(initialSelection.archiveId);
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      updateFeedVisibility();
+    });
   };
 
-  if (!window.__matrixArchiveInit) {
-    window.__matrixArchiveInit = true;
+  if (!window.__matrixArchiveConsoleInit) {
+    window.__matrixArchiveConsoleInit = true;
     document.addEventListener("astro:page-load", initArchiveConsole);
     initArchiveConsole();
   } else {

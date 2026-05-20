@@ -1,9 +1,9 @@
 import type { CollectionEntry } from "astro:content";
 
-export type DossierEntry = CollectionEntry<"dossiers">;
+export type ArchiveEntry = CollectionEntry<"archives">;
 
-export type ResolvedDossier = {
-  entry: DossierEntry;
+export type ResolvedArchive = {
+  entry: ArchiveEntry;
   slug: string;
   type: string;
   typeLabel: string;
@@ -12,9 +12,9 @@ export type ResolvedDossier = {
   fileId: string;
 };
 
-const typePriority = ["topdown", "instant"];
+const typePriority = ["continuous", "instant"];
 
-export function dossierSlug(entry: DossierEntry): string {
+export function archiveSlug(entry: ArchiveEntry): string {
   const parts = entry.id.split("/");
   const last = parts.at(-1) ?? "";
   if (last === "index.md" || last === "index.mdx") {
@@ -24,11 +24,11 @@ export function dossierSlug(entry: DossierEntry): string {
   return last.replace(/\.(md|mdx)$/i, "");
 }
 
-export function dossierType(entry: DossierEntry): string {
+export function archiveType(entry: ArchiveEntry): string {
   return entry.data.type.trim().toLowerCase();
 }
 
-export function formatDossierDate(value: Date): string {
+export function formatArchiveDate(value: Date): string {
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
@@ -41,11 +41,11 @@ export function typeLabel(type: string): string {
   return type.toUpperCase();
 }
 
-export function dossierUrl(entry: DossierEntry): string {
-  return `/dossiers/${dossierType(entry)}/${dossierSlug(entry)}`;
+export function archiveUrl(entry: ArchiveEntry): string {
+  return `/archives/${archiveType(entry)}/${archiveSlug(entry)}`;
 }
 
-export function sortDossiers(entries: DossierEntry[]): DossierEntry[] {
+export function sortArchives(entries: ArchiveEntry[]): ArchiveEntry[] {
   return [...entries].sort((left, right) => {
     const dateDiff =
       new Date(right.data.date).getTime() - new Date(left.data.date).getTime();
@@ -71,17 +71,17 @@ export function sortTypes(values: Iterable<string>): string[] {
   });
 }
 
-export function resolveDossier(entry: DossierEntry): ResolvedDossier {
-  const slug = dossierSlug(entry);
-  const type = dossierType(entry);
+export function resolveArchive(entry: ArchiveEntry): ResolvedArchive {
+  const slug = archiveSlug(entry);
+  const type = archiveType(entry);
 
   return {
     entry,
     slug,
     type,
     typeLabel: typeLabel(type),
-    url: dossierUrl(entry),
-    dateDisplay: formatDossierDate(new Date(entry.data.date)),
+    url: archiveUrl(entry),
+    dateDisplay: formatArchiveDate(new Date(entry.data.date)),
     fileId: `${entry.data.asset}-${slug}`.toUpperCase()
   };
 }

@@ -1,6 +1,6 @@
 import { defineCollection, z } from "astro:content";
 
-const dossiers = defineCollection({
+const archives = defineCollection({
   schema: z.object({
     title: z.string(),
     type: z.string(),
@@ -12,11 +12,11 @@ const dossiers = defineCollection({
     pptx: z.string().optional(),
     markdownDownload: z.string().optional(),
     tradingviewSymbol: z.string(),
-    tradingviewTimeframes: z.array(z.string()).min(2),
+    tradingviewTimeframes: z.array(z.string()).min(3),
     slideImages: z.array(z.string()).default([]),
     featured: z.boolean().default(false),
     status: z.string().default("active")
   })
 });
 
-export const collections = { dossiers };
+export const collections = { archives };

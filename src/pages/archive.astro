@@ -1,41 +1,47 @@
 ---
-import { getCollection } from "astro:content";
+import { getCollection, render } from "astro:content";
 import ArchiveConsole from "../components/ArchiveConsole.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { resolveDossier, sortDossiers, sortTypes } from "../lib/dossiers";
+import { resolveArchive, sortArchives, sortTypes } from "../lib/archives";
 
-const entries = sortDossiers(await getCollection("dossiers"));
-const resolved = entries.map(resolveDossier);
-const types = sortTypes(resolved.map((item) => item.type));
-const initialType = types[0] ?? "topdown";
+const entries = sortArchives(await getCollection("archives"));
+const archives = await Promise.all(
+  entries.map(async (entry) => {
+    const resolved = resolveArchive(entry);
+    const { Content } = await render(entry);
 
-const dossiers = resolved.map((item) => ({
-  id: item.entry.id,
-  slug: item.slug,
-  type: item.type,
-  typeLabel: item.typeLabel,
-  url: item.url,
-  asset: item.entry.data.asset,
-  title: item.entry.data.title,
-  excerpt: item.entry.data.excerpt,
-  thesis: item.entry.data.thesis,
-  dateDisplay: item.dateDisplay,
-  fileId: item.fileId,
-  tradingviewSymbol: item.entry.data.tradingviewSymbol,
-  tradingviewTimeframes: item.entry.data.tradingviewTimeframes
-}));
+    return {
+      id: entry.id,
+      slug: resolved.slug,
+      type: resolved.type,
+      typeLabel: resolved.typeLabel,
+      url: resolved.url,
+      asset: entry.data.asset,
+      title: entry.data.title,
+      excerpt: entry.data.excerpt,
+      thesis: entry.data.thesis,
+      dateDisplay: resolved.dateDisplay,
+      fileId: resolved.fileId,
+      tradingviewSymbol: entry.data.tradingviewSymbol,
+      tradingviewTimeframes: entry.data.tradingviewTimeframes,
+      Content
+    };
+  })
+);
+const types = sortTypes(archives.map((item) => item.type));
+const initialType = types[0] ?? "continuous";
 ---
 
 <BaseLayout
-  title="Matrix Dossier Archive"
-  description="Archive console for Matrix Dossier."
+  title="Matrix Archive"
+  description="Archive console for Matrix Archive."
   pageClass="page-archive"
 >
   <main class="archive-shell site-shell">
     <header class="archive-header">
       <div>
         <p class="eyebrow">[ ARCHIVE CONSOLE ]</p>
-        <h1 transition:name="matrix-title">DOSSIER ARCHIVE</h1>
+        <h1 transition:name="matrix-title">ARCHIVE</h1>
       </div>
       <div class="archive-header__meta">
         <span>ACCESS LEVEL</span>
@@ -43,6 +49,6 @@ const dossiers = resolved.map((item) => ({
       </div>
     </header>
 
-    <ArchiveConsole dossiers={dossiers} types={types} initialType={initialType} />
+    <ArchiveConsole archives={archives} types={types} initialType={initialType} />
   </main>
 </BaseLayout>

@@ -20,7 +20,7 @@ const {
 const media = [...new Set([cover, ...slides].filter(Boolean))];
 ---
 
-<section class="dossier-deck">
+<section class="archive-deck">
   {
     media.length > 0 ? (
       media.map((image, index) => (
@@ -34,7 +34,7 @@ const media = [...new Set([cover, ...slides].filter(Boolean))];
       ))
     ) : (
       <article class="deck-placeholder">
-        <span class="deck-placeholder__eyebrow">VISUAL SLOT OPEN</span>
+        <span class="deck-placeholder__eyebrow">ARCHIVE VISUAL SLOT OPEN</span>
         <h2>{asset} // {type.toUpperCase()}</h2>
         <p>{excerpt}</p>
         <span class="deck-placeholder__note">
