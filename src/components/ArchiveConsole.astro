@@ -173,7 +173,6 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
                   <span class="archive-item__date">{archive.dateDisplay}</span>
                 </span>
                 <span class="archive-item__title">{archive.title}</span>
-                <span class="archive-item__excerpt">{archive.excerpt}</span>
               </button>
 
               <div class="archive-item__body" data-archive-body={archive.id} hidden>
@@ -229,7 +228,7 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
           data-detail-link
         >
           <span>OPEN FILE</span>
-          <span aria-hidden="true">-&gt;</span>
+          <span class="action-link__chevron" aria-hidden="true"></span>
         </a>
       </div>
     </ConsolePanel>

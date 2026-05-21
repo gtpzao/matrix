@@ -135,6 +135,15 @@ img {
   width: auto;
 }
 
+.action-link__chevron {
+  width: 0.58rem;
+  height: 0.58rem;
+  flex: 0 0 auto;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(-45deg);
+}
+
 .console-panel {
   position: relative;
   overflow: hidden;
@@ -706,12 +715,6 @@ img {
   font: 500 1rem/1.2 var(--mono);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-}
-
-.archive-item__excerpt {
-  color: var(--muted);
-  font-size: 0.9rem;
-  line-height: 1.5;
 }
 
 .archive-item__body {
