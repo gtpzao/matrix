@@ -3,7 +3,14 @@ import { getCollection, render } from "astro:content";
 import ArchiveDeck from "../../../components/ArchiveDeck.astro";
 import ConsolePanel from "../../../components/ConsolePanel.astro";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
-import { archiveSlug, archiveType, resolveArchive, sortArchives } from "../../../lib/archives";
+import {
+  archiveSlug,
+  archiveType,
+  displayTradingviewTimeframes,
+  resolveArchive,
+  resolveArchiveMedia,
+  sortArchives
+} from "../../../lib/archives";
 
 export async function getStaticPaths() {
   const entries = sortArchives(await getCollection("archives"));
@@ -22,6 +29,10 @@ export async function getStaticPaths() {
 
 const { entry, resolved } = Astro.props;
 const { Content } = await render(entry);
+const media = resolveArchiveMedia(entry);
+const displayTimeframes = displayTradingviewTimeframes(
+  entry.data.tradingviewTimeframes
+);
 const archiveHref = `/archive?${new URLSearchParams({
   type: resolved.type,
   slug: resolved.slug
@@ -37,7 +48,7 @@ if (
 
 <BaseLayout
   title={`${entry.data.title} | Matrix Archive`}
-  description={entry.data.excerpt}
+  description={resolved.preview}
   pageClass="page-archive-file"
 >
   <main class="archive-file-shell site-shell">
@@ -52,7 +63,7 @@ if (
       <div class="archive-file-hero__copy">
         <p class="eyebrow">[ ARCHIVE FILE ]</p>
         <h1>{entry.data.title}</h1>
-        <p class="archive-file-hero__thesis">{entry.data.thesis ?? entry.data.excerpt}</p>
+        <p class="archive-file-hero__thesis">{resolved.preview}</p>
       </div>
 
       <div class="archive-file-hero__facts">
@@ -65,7 +76,19 @@ if (
           <strong>{entry.data.type.toUpperCase()}</strong>
         </span>
         <span>
-          UPDATED
+          BIAS
+          <strong>{entry.data.bias}</strong>
+        </span>
+        <span>
+          SLOT UTC
+          <strong>{resolved.slotDisplay}</strong>
+        </span>
+        <span>
+          CAPTURE UTC
+          <strong>{resolved.captureDisplay}</strong>
+        </span>
+        <span>
+          DATE
           <strong>{resolved.dateDisplay}</strong>
         </span>
       </div>
@@ -77,35 +100,24 @@ if (
           title={entry.data.title}
           asset={entry.data.asset}
           type={entry.data.type}
-          excerpt={entry.data.excerpt}
-          cover={entry.data.cover}
-          slides={entry.data.slideImages}
+          preview={resolved.preview}
+          slides={media}
         />
       </div>
 
       <aside class="archive-file-showcase__meta">
-        <ConsolePanel title="THESIS">
-          <p class="console-copy">{entry.data.thesis ?? entry.data.excerpt}</p>
-        </ConsolePanel>
-
-        <ConsolePanel title="DOWNLOADS">
-          <div class="download-stack">
-            {
-              entry.data.pptx && (
-                <a class="action-link" href={entry.data.pptx} download>
-                  <span>DOWNLOAD PPTX</span>
-                  <span aria-hidden="true">-&gt;</span>
-                </a>
-              )
-            }
-            {
-              entry.data.markdownDownload && (
-                <a class="action-link" href={entry.data.markdownDownload} download>
-                  <span>DOWNLOAD MARKDOWN</span>
-                  <span aria-hidden="true">-&gt;</span>
-                </a>
-              )
-            }
+        <ConsolePanel title="SIGNAL">
+          <div class="signal-stack">
+            <span
+              class:list={[
+                "bias-tag",
+                "bias-tag--large",
+                `bias-tag--${entry.data.bias.toLowerCase()}`
+              ]}
+            >
+              {entry.data.bias}
+            </span>
+            <p class="console-copy">{resolved.preview}</p>
           </div>
         </ConsolePanel>
 
@@ -116,9 +128,9 @@ if (
               <strong>{entry.data.tradingviewSymbol}</strong>
             </div>
             {
-              entry.data.tradingviewTimeframes.map((timeframe, index) => (
+              displayTimeframes.map((timeframe, index) => (
                 <div class="detail-meta__row">
-                  <span>{index === 0 ? "TF-01" : index === 1 ? "TF-02" : "TF-03"}</span>
+                  <span>{`TF-${String(index + 1).padStart(2, "0")}`}</span>
                   <strong>{timeframe}</strong>
                 </div>
               ))
@@ -126,7 +138,7 @@ if (
           </div>
           <a class="action-link" href={archiveHref}>
             <span>OPEN ARCHIVE CONSOLE</span>
-            <span aria-hidden="true">-&gt;</span>
+            <span class="action-link__chevron" aria-hidden="true"></span>
           </a>
         </ConsolePanel>
       </aside>

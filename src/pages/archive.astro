@@ -3,7 +3,12 @@ import { getCollection, render } from "astro:content";
 import ArchiveConsole from "../components/ArchiveConsole.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { buildGlitchWordmark } from "../lib/glitchWordmark";
-import { resolveArchive, sortArchives, sortTypes } from "../lib/archives";
+import {
+  displayTradingviewTimeframes,
+  resolveArchive,
+  sortArchives,
+  sortTypes
+} from "../lib/archives";
 
 const entries = sortArchives(await getCollection("archives"));
 const archives = await Promise.all(
@@ -18,13 +23,14 @@ const archives = await Promise.all(
       typeLabel: resolved.typeLabel,
       url: resolved.url,
       asset: entry.data.asset,
+      bias: entry.data.bias,
       title: entry.data.title,
-      excerpt: entry.data.excerpt,
-      thesis: entry.data.thesis,
       dateDisplay: resolved.dateDisplay,
       fileId: resolved.fileId,
       tradingviewSymbol: entry.data.tradingviewSymbol,
-      tradingviewTimeframes: entry.data.tradingviewTimeframes,
+      tradingviewTimeframes: displayTradingviewTimeframes(
+        entry.data.tradingviewTimeframes
+      ),
       Content
     };
   })

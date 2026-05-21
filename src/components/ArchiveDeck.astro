@@ -3,8 +3,7 @@ interface Props {
   title: string;
   asset: string;
   type: string;
-  excerpt: string;
-  cover?: string;
+  preview: string;
   slides?: string[];
 }
 
@@ -12,12 +11,11 @@ const {
   title,
   asset,
   type,
-  excerpt,
-  cover,
+  preview,
   slides = []
 } = Astro.props;
 
-const media = [...new Set([cover, ...slides].filter(Boolean))];
+const media = [...new Set(slides.filter(Boolean))];
 ---
 
 <section class="archive-deck">
@@ -36,9 +34,9 @@ const media = [...new Set([cover, ...slides].filter(Boolean))];
       <article class="deck-placeholder">
         <span class="deck-placeholder__eyebrow">ARCHIVE VISUAL SLOT OPEN</span>
         <h2>{asset} // {type.toUpperCase()}</h2>
-        <p>{excerpt}</p>
+        <p>{preview}</p>
         <span class="deck-placeholder__note">
-          link manual slide exports in frontmatter when ready
+          no capture linked for this dossier yet
         </span>
       </article>
     )

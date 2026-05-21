@@ -8,9 +8,8 @@ type ArchiveRenderable = {
   typeLabel: string;
   url: string;
   asset: string;
+  bias: string;
   title: string;
-  excerpt: string;
-  thesis?: string;
   dateDisplay: string;
   fileId: string;
   tradingviewSymbol: string;
@@ -44,11 +43,31 @@ const typeCopy: Record<string, string> = {
 };
 
 const timeframeDefaults: Record<string, string[]> = {
-  continuous: ["M", "W", "D"],
-  instant: ["240", "120", "60"]
+  continuous: ["1M", "1W", "1D", "4h"],
+  instant: ["15"]
+};
+const timeframeWidgetMap: Record<string, string> = {
+  "1M": "M",
+  "1W": "W",
+  "1D": "D",
+  "4h": "240",
+  "2h": "120",
+  "1h": "60",
+  "30": "30",
+  "15": "15",
+  M: "M",
+  W: "W",
+  D: "D",
+  "240": "240",
+  "120": "120",
+  "60": "60"
 };
 
 const archiveIndex = archives.map(({ Content, ...archive }) => archive);
+const widgetCount = Math.max(
+  1,
+  ...archives.map((archive) => archive.tradingviewTimeframes.length)
+);
 const typeFilterIndex: TypeFilterMeta[] = types.map((type) => {
   const items = archiveIndex.filter((archive) => archive.type === type);
   const assetMap = new Map<string, AssetFilterMeta>();
@@ -73,7 +92,9 @@ const typeFilterIndex: TypeFilterMeta[] = types.map((type) => {
     assets: [...assetMap.values()]
   };
 });
-const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
+const initialIntervals = (
+  timeframeDefaults[initialType] ?? ["--"]
+).slice(0, widgetCount);
 const formatCount = (value: number) => String(value).padStart(2, "0");
 ---
 
@@ -169,7 +190,17 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
                 data-archive-toggle={archive.id}
               >
                 <span class="archive-item__topline">
-                  <span class="archive-item__asset">{archive.asset}</span>
+                  <span class="archive-item__meta">
+                    <span class="archive-item__asset">{archive.asset}</span>
+                    <span
+                      class:list={[
+                        "bias-tag",
+                        `bias-tag--${archive.bias.toLowerCase()}`
+                      ]}
+                    >
+                      {archive.bias}
+                    </span>
+                  </span>
                   <span class="archive-item__date">{archive.dateDisplay}</span>
                 </span>
                 <span class="archive-item__title">{archive.title}</span>
@@ -189,8 +220,8 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
     <ConsolePanel title="ASSET" className="archive-console__detail">
       <div class="detail-stack">
         {
-          [0, 1, 2].map((index) => (
-            <div class="widget-shell widget-shell--archive">
+          Array.from({ length: widgetCount }, (_, index) => (
+            <div class="widget-shell widget-shell--archive" data-widget-shell={index}>
               <div class="widget-shell__header">
                 <span data-detail-symbol={index}>--</span>
                 <span data-detail-interval={index}>{initialIntervals[index] ?? "--"}</span>
@@ -210,6 +241,10 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
           <div class="detail-meta__row">
             <span>TYPE</span>
             <strong data-detail-type>{initialType.toUpperCase()}</strong>
+          </div>
+          <div class="detail-meta__row">
+            <span>BIAS</span>
+            <strong data-detail-bias>--</strong>
           </div>
           <div class="detail-meta__row">
             <span>UPDATED</span>
@@ -237,7 +272,14 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
 
 <script
   is:inline
-  define:vars={{ archiveIndex, initialType, types, timeframeDefaults, typeFilterIndex }}
+  define:vars={{
+    archiveIndex,
+    initialType,
+    types,
+    timeframeDefaults,
+    timeframeWidgetMap,
+    typeFilterIndex
+  }}
 >
   const initArchiveConsole = () => {
     const root = document.querySelector("[data-archive-console]");
@@ -252,11 +294,13 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
     const archiveItems = [...root.querySelectorAll("[data-archive-item]")];
     const toggleButtons = [...root.querySelectorAll("[data-archive-toggle]")];
     const bodyNodes = [...root.querySelectorAll("[data-archive-body]")];
+    const widgetShells = [...root.querySelectorAll("[data-widget-shell]")];
     const chartNodes = [...root.querySelectorAll("[data-detail-chart]")];
     const symbolNodes = [...root.querySelectorAll("[data-detail-symbol]")];
     const intervalNodes = [...root.querySelectorAll("[data-detail-interval]")];
     const assetNode = root.querySelector("[data-detail-asset]");
     const typeNode = root.querySelector("[data-detail-type]");
+    const biasNode = root.querySelector("[data-detail-bias]");
     const dateNode = root.querySelector("[data-detail-date]");
     const fileIdNode = root.querySelector("[data-detail-fileid]");
     const linkNode = root.querySelector("[data-detail-link]");
@@ -276,7 +320,9 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
     );
 
     const defaultIntervalsForType = (type) =>
-      timeframeDefaults[type] ?? ["--", "--", "--"];
+      timeframeDefaults[type] ?? ["--"];
+
+    const toWidgetInterval = (value) => timeframeWidgetMap[value] ?? value;
 
     const assetExistsInType = (type, asset) =>
       Boolean(
@@ -315,6 +361,12 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
     const setDetailSymbol = (symbol) => {
       symbolNodes.forEach((node) => {
         node.textContent = symbol ?? "--";
+      });
+    };
+
+    const syncWidgetVisibility = (intervals) => {
+      widgetShells.forEach((shell, index) => {
+        shell.hidden = index >= intervals.length;
       });
     };
 
@@ -468,7 +520,10 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       const nonce = ++widgetRenderNonce;
 
       if (!archive) {
+        const fallbackIntervals = defaultIntervalsForType(activeType);
+
         renderWidgetFallback("SELECT ARCHIVE");
+        syncWidgetVisibility(fallbackIntervals);
         return;
       }
 
@@ -497,12 +552,17 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       };
 
       chartNodes.forEach((node, index) => {
+        if (index >= archive.tradingviewTimeframes.length) {
+          node.innerHTML = "";
+          return;
+        }
+
         const frameId = `tv-archive-${index}`;
         node.innerHTML = `<div id="${frameId}"></div>`;
 
         new window.TradingView.widget({
           ...commonConfig,
-          interval: archive.tradingviewTimeframes[index],
+          interval: toWidgetInterval(archive.tradingviewTimeframes[index]),
           container_id: frameId
         });
       });
@@ -510,8 +570,10 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
 
     const showDetailForArchive = async (archive) => {
       if (!archive) {
+        const fallbackIntervals = defaultIntervalsForType(activeType);
         if (assetNode) assetNode.textContent = "--";
         if (typeNode) typeNode.textContent = activeType.toUpperCase();
+        if (biasNode) biasNode.textContent = "--";
         if (dateNode) dateNode.textContent = "--";
         if (fileIdNode) fileIdNode.textContent = "--";
         if (linkNode) {
@@ -521,7 +583,8 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
         }
 
         setDetailSymbol("--");
-        setDetailIntervals(defaultIntervalsForType(activeType));
+        syncWidgetVisibility(fallbackIntervals);
+        setDetailIntervals(fallbackIntervals);
         syncArchiveLocation();
         await renderWidgets(null);
         return;
@@ -529,6 +592,7 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
 
       if (assetNode) assetNode.textContent = archive.asset;
       if (typeNode) typeNode.textContent = archive.typeLabel;
+      if (biasNode) biasNode.textContent = archive.bias;
       if (dateNode) dateNode.textContent = archive.dateDisplay;
       if (fileIdNode) fileIdNode.textContent = archive.fileId;
       if (linkNode) {
@@ -538,6 +602,7 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       }
 
       setDetailSymbol(archive.tradingviewSymbol);
+      syncWidgetVisibility(archive.tradingviewTimeframes);
       setDetailIntervals(archive.tradingviewTimeframes);
       syncArchiveLocation();
       await renderWidgets(archive);

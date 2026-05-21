@@ -1,6 +1,36 @@
 import type { CollectionEntry } from "astro:content";
 
 export type ArchiveEntry = CollectionEntry<"archives">;
+export type ArchiveBias = ArchiveEntry["data"]["bias"];
+
+const timeframeDisplayMap: Record<string, string> = {
+  M: "1M",
+  "1M": "1M",
+  W: "1W",
+  "1W": "1W",
+  D: "1D",
+  "1D": "1D",
+  "240": "4h",
+  "4H": "4h",
+  "4h": "4h",
+  "120": "2h",
+  "2H": "2h",
+  "2h": "2h",
+  "60": "1h",
+  "1H": "1h",
+  "1h": "1h",
+  "30": "30",
+  "15": "15"
+};
+
+const archiveCaptureUrls = import.meta.glob(
+  "../content/archives/**/captures/*.{png,jpg,jpeg,webp,avif,svg}",
+  {
+    eager: true,
+    import: "default",
+    query: "?url"
+  }
+) as Record<string, string>;
 
 export type ResolvedArchive = {
   entry: ArchiveEntry;
@@ -9,10 +39,23 @@ export type ResolvedArchive = {
   typeLabel: string;
   url: string;
   dateDisplay: string;
+  slotDisplay: string;
+  captureDisplay: string;
   fileId: string;
+  preview: string;
 };
 
 const typePriority = ["continuous", "instant"];
+const markdownSectionPattern = (heading: string) =>
+  new RegExp(`^##\\s+${escapeRegExp(heading)}\\s*$([\\s\\S]*?)(?=^##\\s+|\\Z)`, "im");
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function archiveDirectory(entry: ArchiveEntry): string {
+  return entry.id.replace(/\/index\.(md|mdx)$/i, "");
+}
 
 export function archiveSlug(entry: ArchiveEntry): string {
   const parts = entry.id.split("/");
@@ -37,6 +80,20 @@ export function formatArchiveDate(value: Date): string {
   }).format(value);
 }
 
+export function formatArchiveTimestamp(value: Date): string {
+  const formatted = new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "UTC"
+  }).format(value);
+
+  return `${formatted.replace(",", "")} UTC`;
+}
+
 export function typeLabel(type: string): string {
   return type.toUpperCase();
 }
@@ -47,10 +104,18 @@ export function archiveUrl(entry: ArchiveEntry): string {
 
 export function sortArchives(entries: ArchiveEntry[]): ArchiveEntry[] {
   return [...entries].sort((left, right) => {
-    const dateDiff =
-      new Date(right.data.date).getTime() - new Date(left.data.date).getTime();
-    if (dateDiff !== 0) {
-      return dateDiff;
+    const slotDiff =
+      new Date(right.data.slotTimeUtc).getTime() -
+      new Date(left.data.slotTimeUtc).getTime();
+    if (slotDiff !== 0) {
+      return slotDiff;
+    }
+
+    const captureDiff =
+      new Date(right.data.captureTimeUtc).getTime() -
+      new Date(left.data.captureTimeUtc).getTime();
+    if (captureDiff !== 0) {
+      return captureDiff;
     }
 
     return right.data.title.localeCompare(left.data.title);
@@ -71,6 +136,47 @@ export function sortTypes(values: Iterable<string>): string[] {
   });
 }
 
+export function archiveSection(entry: ArchiveEntry, heading: string): string {
+  return entry.body.match(markdownSectionPattern(heading))?.[1]?.trim() ?? "";
+}
+
+export function stripMarkdown(value: string): string {
+  return value
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/[`*_>~]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function archivePreview(entry: ArchiveEntry): string {
+  const previewSection = archiveSection(entry, "Preview");
+  return stripMarkdown(previewSection) || entry.data.title;
+}
+
+export function displayTradingviewTimeframe(value: string): string {
+  const trimmed = value.trim();
+  return timeframeDisplayMap[trimmed] ?? trimmed;
+}
+
+export function displayTradingviewTimeframes(values: string[]): string[] {
+  return values.map(displayTradingviewTimeframe);
+}
+
+export function resolveArchiveMedia(entry: ArchiveEntry): string[] {
+  return entry.data.slideImages.map((imagePath) => {
+    if (imagePath.startsWith("/") || /^https?:\/\//.test(imagePath)) {
+      return imagePath;
+    }
+
+    const normalizedPath = imagePath.replace(/^\.\//, "");
+    const captureKey = `../content/archives/${archiveDirectory(entry)}/${normalizedPath}`;
+    return archiveCaptureUrls[captureKey] ?? imagePath;
+  });
+}
+
 export function resolveArchive(entry: ArchiveEntry): ResolvedArchive {
   const slug = archiveSlug(entry);
   const type = archiveType(entry);
@@ -82,6 +188,9 @@ export function resolveArchive(entry: ArchiveEntry): ResolvedArchive {
     typeLabel: typeLabel(type),
     url: archiveUrl(entry),
     dateDisplay: formatArchiveDate(new Date(entry.data.date)),
-    fileId: `${entry.data.asset}-${slug}`.toUpperCase()
+    slotDisplay: formatArchiveTimestamp(new Date(entry.data.slotTimeUtc)),
+    captureDisplay: formatArchiveTimestamp(new Date(entry.data.captureTimeUtc)),
+    fileId: slug.toUpperCase(),
+    preview: archivePreview(entry)
   };
 }

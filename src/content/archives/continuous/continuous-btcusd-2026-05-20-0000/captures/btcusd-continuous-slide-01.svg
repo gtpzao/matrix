@@ -1,0 +1,13 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="900" fill="#020603"/>
+  <rect x="48" y="48" width="1504" height="804" stroke="#31523F" stroke-width="2"/>
+  <text x="110" y="126" fill="#8DFFB4" font-family="'IBM Plex Mono', monospace" font-size="24" letter-spacing="8">SLIDE 01 // MONTHLY MAP</text>
+  <text x="110" y="214" fill="#EAF7EE" font-family="'Oxanium', monospace" font-size="76" letter-spacing="12">MACRO STILL IN CONTROL</text>
+  <rect x="112" y="282" width="1328" height="470" rx="18" stroke="#365845"/>
+  <line x1="184" y1="676" x2="1360" y2="676" stroke="#274433"/>
+  <line x1="184" y1="374" x2="1360" y2="374" stroke="#274433"/>
+  <polyline points="184,620 312,560 448,498 606,520 744,458 904,468 1064,352 1216,330 1360,352" fill="none" stroke="#8DFFB4" stroke-width="8"/>
+  <text x="188" y="352" fill="#9AB8A3" font-family="'IBM Plex Mono', monospace" font-size="22">100K-115K // SUPPLY CEILING</text>
+  <text x="188" y="706" fill="#9AB8A3" font-family="'IBM Plex Mono', monospace" font-size="22">45K // MACRO SUPPORT BASE</text>
+  <text x="112" y="804" fill="#EAF7EE" font-family="'IBM Plex Mono', monospace" font-size="24" letter-spacing="4">BIAS: PRIMARY TREND CONSTRUCTIVE, SHORT TERM STILL BELOW KEY SUPPLY</text>
+</svg>

@@ -1,0 +1,20 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="900" fill="#020603"/>
+  <rect x="40" y="40" width="1520" height="820" stroke="#274433" stroke-width="2"/>
+  <path d="M0 180H1600M0 450H1600M0 720H1600M320 0V900M800 0V900M1280 0V900" stroke="#11301F" stroke-opacity=".45"/>
+  <rect x="118" y="136" width="1364" height="628" rx="18" stroke="#406F56" stroke-width="2"/>
+  <text x="120" y="108" fill="#8DFFB4" font-family="'IBM Plex Mono', monospace" font-size="26" letter-spacing="8">[ TOPDOWN DOSSIER ]</text>
+  <text x="120" y="248" fill="#EAF7EE" font-family="'Oxanium', monospace" font-size="84" letter-spacing="14">BTCUSD // TOPDOWN</text>
+  <text x="122" y="322" fill="#9AB8A3" font-family="'IBM Plex Mono', monospace" font-size="28" letter-spacing="4">MACRO RANGE HOLDS. SHORT TERM STILL BELOW SUPPLY.</text>
+  <rect x="120" y="384" width="540" height="248" rx="14" stroke="#365845"/>
+  <text x="154" y="432" fill="#8DFFB4" font-family="'IBM Plex Mono', monospace" font-size="24" letter-spacing="6">STRUCTURE</text>
+  <text x="154" y="490" fill="#EAF7EE" font-family="'IBM Plex Mono', monospace" font-size="28">SUPPORT MACRO // 45K</text>
+  <text x="154" y="538" fill="#EAF7EE" font-family="'IBM Plex Mono', monospace" font-size="28">SUPPORT SHORT // 72K-73K</text>
+  <text x="154" y="586" fill="#EAF7EE" font-family="'IBM Plex Mono', monospace" font-size="28">SUPPLY MACRO // 100K-115K</text>
+  <rect x="796" y="382" width="548" height="254" rx="14" stroke="#365845"/>
+  <polyline points="838,580 930,514 1010,540 1102,470 1192,502 1278,420" fill="none" stroke="#8DFFB4" stroke-width="6"/>
+  <polyline points="838,612 930,594 1010,622 1102,576 1192,598 1278,548" fill="none" stroke="#406F56" stroke-width="3"/>
+  <text x="838" y="432" fill="#8DFFB4" font-family="'IBM Plex Mono', monospace" font-size="24" letter-spacing="6">FLOW MAP</text>
+  <text x="838" y="676" fill="#9AB8A3" font-family="'IBM Plex Mono', monospace" font-size="24" letter-spacing="4">RECLAIM 78K-80K TO EASE PRESSURE</text>
+  <text x="120" y="792" fill="#9AB8A3" font-family="'IBM Plex Mono', monospace" font-size="24" letter-spacing="4">UPDATED 20.05.2026 // LIVE SYMBOL BINANCE:BTCUSDT</text>
+</svg>

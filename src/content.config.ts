@@ -5,17 +5,13 @@ const archives = defineCollection({
     title: z.string(),
     type: z.string(),
     asset: z.string(),
+    bias: z.enum(["BUY", "SELL", "NEUTRAL"]),
     date: z.coerce.date(),
-    excerpt: z.string(),
-    thesis: z.string().optional(),
-    cover: z.string().optional(),
-    pptx: z.string().optional(),
-    markdownDownload: z.string().optional(),
+    slotTimeUtc: z.coerce.date(),
+    captureTimeUtc: z.coerce.date(),
     tradingviewSymbol: z.string(),
-    tradingviewTimeframes: z.array(z.string()).min(3),
-    slideImages: z.array(z.string()).default([]),
-    featured: z.boolean().default(false),
-    status: z.string().default("active")
+    tradingviewTimeframes: z.array(z.string()).min(1),
+    slideImages: z.array(z.string()).min(1)
   })
 });
 
