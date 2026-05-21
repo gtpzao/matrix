@@ -2,6 +2,7 @@
 import { getCollection, render } from "astro:content";
 import ArchiveConsole from "../components/ArchiveConsole.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { buildGlitchWordmark } from "../lib/glitchWordmark";
 import { resolveArchive, sortArchives, sortTypes } from "../lib/archives";
 
 const entries = sortArchives(await getCollection("archives"));
@@ -30,6 +31,7 @@ const archives = await Promise.all(
 );
 const types = sortTypes(archives.map((item) => item.type));
 const initialType = types[0] ?? "continuous";
+const titleWords = buildGlitchWordmark(["ARCHIVE"]);
 ---
 
 <BaseLayout
@@ -39,9 +41,27 @@ const initialType = types[0] ?? "continuous";
 >
   <main class="archive-shell site-shell">
     <header class="archive-header">
-      <div>
-        <p class="eyebrow">[ ARCHIVE CONSOLE ]</p>
-        <h1 transition:name="matrix-title">ARCHIVE</h1>
+      <div class="archive-header__wordmark">
+        <h1
+          class="landing__title archive-header__title"
+          transition:name="matrix-title"
+          aria-label="ARCHIVE"
+        >
+          {titleWords.map(({ glyphs }) => (
+            <span class="landing__word" aria-hidden="true">
+              {glyphs.map(({ glyph, profile, index }) => (
+                <span
+                  class="landing__glyph"
+                  data-glyph={glyph}
+                  style={`--glyph-index:${index};--upper-delay:${profile.upperDelay}s;--upper-duration:${profile.upperDuration}s;--lower-delay:${profile.lowerDelay}s;--lower-duration:${profile.lowerDuration}s;--noise-a-delay:${profile.noiseADelay}s;--noise-a-duration:${profile.noiseADuration}s;--noise-b-delay:${profile.noiseBDelay}s;--noise-b-duration:${profile.noiseBDuration}s;`}
+                >
+                  <span class="landing__glyph-core" data-glyph={glyph}>{glyph}</span>
+                </span>
+              ))}
+            </span>
+          ))}
+        </h1>
+        <p class="eyebrow archive-header__eyebrow">[ CONSOLE ]</p>
       </div>
       <div class="archive-header__meta">
         <span>ACCESS LEVEL</span>

@@ -413,9 +413,30 @@ img {
   margin-bottom: 1.1rem;
 }
 
+.archive-header__wordmark {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
 .archive-header h1 {
   font-size: clamp(3.1rem, 5.5vw, 5.8rem);
   letter-spacing: 0.22em;
+}
+
+.archive-header h1.archive-header__title {
+  justify-content: flex-start;
+  margin: 0;
+  font-size: clamp(3.1rem, 5.5vw, 5.8rem);
+  letter-spacing: 0;
+  line-height: 0.92;
+  filter: drop-shadow(0 0 24px rgba(141, 255, 180, 0.14));
+}
+
+.archive-header__eyebrow {
+  justify-self: end;
+  padding-right: 0.12em;
+  text-align: right;
 }
 
 .archive-header__meta {
@@ -455,10 +476,23 @@ img {
   gap: 0.8rem;
 }
 
+.type-card {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.type-card__bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 2.9rem;
+  gap: 0.55rem;
+  align-items: stretch;
+}
+
 .type-button {
   display: grid;
   gap: 0.5rem;
   width: 100%;
+  min-height: 100%;
   padding: 0.95rem 0.9rem;
   text-align: left;
   border: 1px solid var(--line);
@@ -472,6 +506,21 @@ img {
     box-shadow 200ms ease;
 }
 
+.type-card__expand {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 0.45rem;
+  background: rgba(1, 5, 3, 0.72);
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    border-color 200ms ease,
+    background 200ms ease,
+    box-shadow 200ms ease,
+    color 200ms ease;
+}
+
 .type-button:hover,
 .type-button:focus-visible,
 .type-button.is-active {
@@ -480,6 +529,30 @@ img {
   box-shadow:
     inset 0 0 0 1px rgba(141, 255, 180, 0.05),
     0 0 20px rgba(141, 255, 180, 0.06);
+}
+
+.type-card__expand:hover,
+.type-card__expand:focus-visible,
+.type-card__expand.is-active {
+  border-color: var(--line-strong);
+  background: rgba(5, 12, 8, 0.94);
+  box-shadow:
+    inset 0 0 0 1px rgba(141, 255, 180, 0.05),
+    0 0 20px rgba(141, 255, 180, 0.06);
+  color: var(--accent-strong);
+}
+
+.type-card__chevron {
+  width: 0.58rem;
+  height: 0.58rem;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 200ms ease;
+}
+
+.type-card__expand.is-expanded .type-card__chevron {
+  transform: rotate(45deg);
 }
 
 .type-button__title {
@@ -493,6 +566,62 @@ img {
   font: 400 0.88rem/1.45 var(--body);
   letter-spacing: 0;
   text-transform: none;
+}
+
+.type-card__assets {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.35rem;
+  border: 1px solid rgba(141, 255, 180, 0.14);
+  border-radius: 0.45rem;
+  background: rgba(2, 6, 4, 0.72);
+}
+
+.type-card__assets[hidden] {
+  display: none;
+}
+
+.type-asset-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--muted);
+  text-align: left;
+  cursor: pointer;
+  font: 500 0.78rem/1 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.type-asset-row:hover,
+.type-asset-row:focus-visible {
+  color: var(--accent);
+  border-color: rgba(141, 255, 180, 0.12);
+}
+
+.type-asset-row.is-active {
+  color: var(--accent-strong);
+  border-color: var(--line-strong);
+  background: rgba(6, 14, 10, 0.94);
+}
+
+.type-asset-row__label {
+  min-width: 0;
+}
+
+.type-asset-row__count {
+  color: inherit;
+  opacity: 0.88;
 }
 
 .feed-list {
@@ -583,20 +712,6 @@ img {
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.5;
-  padding-right: 2.25rem;
-}
-
-.archive-item__indicator {
-  position: absolute;
-  top: 0.95rem;
-  right: 1rem;
-  color: var(--accent);
-  font: 500 1.28rem/1 var(--mono);
-  transition: transform 180ms ease;
-}
-
-.archive-item.is-active .archive-item__indicator {
-  transform: rotate(45deg);
 }
 
 .archive-item__body {
@@ -962,6 +1077,10 @@ img {
   }
 
   .archive-header h1 {
+    font-size: clamp(2.7rem, 12vw, 4rem);
+  }
+
+  .archive-header h1.archive-header__title {
     font-size: clamp(2.7rem, 12vw, 4rem);
   }
 

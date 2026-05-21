@@ -18,6 +18,18 @@ type ArchiveRenderable = {
   Content: any;
 };
 
+type AssetFilterMeta = {
+  asset: string;
+  count: number;
+  latestArchiveId: string;
+};
+
+type TypeFilterMeta = {
+  type: string;
+  totalCount: number;
+  assets: AssetFilterMeta[];
+};
+
 interface Props {
   archives: ArchiveRenderable[];
   types: string[];
@@ -37,7 +49,32 @@ const timeframeDefaults: Record<string, string[]> = {
 };
 
 const archiveIndex = archives.map(({ Content, ...archive }) => archive);
+const typeFilterIndex: TypeFilterMeta[] = types.map((type) => {
+  const items = archiveIndex.filter((archive) => archive.type === type);
+  const assetMap = new Map<string, AssetFilterMeta>();
+
+  items.forEach((archive) => {
+    const current = assetMap.get(archive.asset);
+    if (current) {
+      current.count += 1;
+      return;
+    }
+
+    assetMap.set(archive.asset, {
+      asset: archive.asset,
+      count: 1,
+      latestArchiveId: archive.id
+    });
+  });
+
+  return {
+    type,
+    totalCount: items.length,
+    assets: [...assetMap.values()]
+  };
+});
 const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
+const formatCount = (value: number) => String(value).padStart(2, "0");
 ---
 
 <section class="archive-console" data-archive-console>
@@ -45,16 +82,67 @@ const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
     <ConsolePanel title="TYPES" className="archive-console__types">
       <div class="type-list">
         {
-          types.map((type) => (
-            <button
-              class:list={["type-button", { "is-active": type === initialType }]}
-              type="button"
-              data-type-button={type}
-            >
-              <span class="type-button__title">{type.toUpperCase()}</span>
-              <span class="type-button__copy">{typeCopy[type] ?? "branch active"}</span>
-            </button>
-          ))
+          types.map((type) => {
+            const typeFilter = typeFilterIndex.find((entry) => entry.type === type);
+
+            return (
+              <article
+                class:list={["type-card", { "is-active": type === initialType }]}
+                data-type-card={type}
+              >
+                <div class="type-card__bar">
+                  <button
+                    class:list={["type-button", { "is-active": type === initialType }]}
+                    type="button"
+                    data-type-button={type}
+                  >
+                    <span class="type-button__title">{type.toUpperCase()}</span>
+                    <span class="type-button__copy">{typeCopy[type] ?? "branch active"}</span>
+                  </button>
+
+                  <button
+                    class="type-card__expand"
+                    type="button"
+                    aria-expanded="false"
+                    aria-label={`Expand ${type} asset filters`}
+                    data-type-expand={type}
+                  >
+                    <span class="type-card__chevron" aria-hidden="true"></span>
+                  </button>
+                </div>
+
+                <div class="type-card__assets" data-type-assets-panel={type} hidden>
+                  <button
+                    type="button"
+                    class="type-asset-row type-asset-row--all"
+                    data-asset-button={type}
+                    data-asset-type={type}
+                    data-asset-value=""
+                  >
+                    <span class="type-asset-row__label">ALL</span>
+                    <span class="type-asset-row__count">
+                      {formatCount(typeFilter?.totalCount ?? 0)}
+                    </span>
+                  </button>
+
+                  {
+                    typeFilter?.assets.map(({ asset, count }) => (
+                      <button
+                        type="button"
+                        class="type-asset-row"
+                        data-asset-button={type}
+                        data-asset-type={type}
+                        data-asset-value={asset}
+                      >
+                        <span class="type-asset-row__label">{asset}</span>
+                        <span class="type-asset-row__count">{formatCount(count)}</span>
+                      </button>
+                    ))
+                  }
+                </div>
+              </article>
+            );
+          })
         }
       </div>
     </ConsolePanel>
@@ -70,6 +158,7 @@ const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
               ]}
               data-archive-item={archive.id}
               data-archive-type={archive.type}
+              data-archive-asset={archive.asset}
               data-archive-order={order}
               hidden={archive.type !== initialType}
             >
@@ -85,7 +174,6 @@ const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
                 </span>
                 <span class="archive-item__title">{archive.title}</span>
                 <span class="archive-item__excerpt">{archive.excerpt}</span>
-                <span class="archive-item__indicator" aria-hidden="true">+</span>
               </button>
 
               <div class="archive-item__body" data-archive-body={archive.id} hidden>
@@ -140,7 +228,7 @@ const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
           aria-disabled="true"
           data-detail-link
         >
-          <span>OPEN ARCHIVE</span>
+          <span>OPEN FILE</span>
           <span aria-hidden="true">-&gt;</span>
         </a>
       </div>
@@ -148,13 +236,20 @@ const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
   </div>
 </section>
 
-<script is:inline define:vars={{ archiveIndex, initialType, types, timeframeDefaults }}>
+<script
+  is:inline
+  define:vars={{ archiveIndex, initialType, types, timeframeDefaults, typeFilterIndex }}
+>
   const initArchiveConsole = () => {
     const root = document.querySelector("[data-archive-console]");
     if (!root || root.dataset.archiveBound === "true") return;
     root.dataset.archiveBound = "true";
 
+    const typeCards = [...root.querySelectorAll("[data-type-card]")];
     const typeButtons = [...root.querySelectorAll("[data-type-button]")];
+    const expandButtons = [...root.querySelectorAll("[data-type-expand]")];
+    const assetFilterButtons = [...root.querySelectorAll("[data-asset-button]")];
+    const assetPanels = [...root.querySelectorAll("[data-type-assets-panel]")];
     const archiveItems = [...root.querySelectorAll("[data-archive-item]")];
     const toggleButtons = [...root.querySelectorAll("[data-archive-toggle]")];
     const bodyNodes = [...root.querySelectorAll("[data-archive-body]")];
@@ -168,6 +263,9 @@ const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
     const linkNode = root.querySelector("[data-detail-link]");
 
     const archiveMap = new Map(archiveIndex.map((archive) => [archive.id, archive]));
+    const typeFilterMap = new Map(
+      typeFilterIndex.map((typeFilter) => [typeFilter.type, typeFilter])
+    );
     const itemMap = new Map(
       archiveItems.map((item) => [item.dataset.archiveItem, item])
     );
@@ -180,6 +278,25 @@ const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
 
     const defaultIntervalsForType = (type) =>
       timeframeDefaults[type] ?? ["--", "--", "--"];
+
+    const assetExistsInType = (type, asset) =>
+      Boolean(
+        asset &&
+          typeFilterMap
+            .get(type)
+            ?.assets.some((typeFilter) => typeFilter.asset === asset)
+      );
+
+    const latestArchiveForAsset = (type, asset) => {
+      const latestArchiveId = typeFilterMap
+        .get(type)
+        ?.assets.find((typeFilter) => typeFilter.asset === asset)?.latestArchiveId;
+
+      return latestArchiveId ? archiveMap.get(latestArchiveId) ?? null : null;
+    };
+
+    const latestArchiveForType = (type) =>
+      archiveIndex.find((archive) => archive.type === type) ?? null;
 
     const getVisibleLimit = () =>
       window.matchMedia("(max-width: 840px)").matches ? 15 : 30;
@@ -202,9 +319,47 @@ const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
       });
     };
 
-    const syncTypeButtons = () => {
+    const syncTypeUi = () => {
+      typeCards.forEach((card) => {
+        const type = card.dataset.typeCard;
+        const isActive = type === activeType;
+        const isExpanded = isActive && expandedType === type;
+
+        card.classList.toggle("is-active", isActive);
+        card.classList.toggle("is-expanded", isExpanded);
+      });
+
       typeButtons.forEach((button) => {
         button.classList.toggle("is-active", button.dataset.typeButton === activeType);
+      });
+
+      expandButtons.forEach((button) => {
+        const type = button.dataset.typeExpand;
+        const isActive = type === activeType;
+        const isExpanded = isActive && expandedType === type;
+
+        button.classList.toggle("is-active", isActive);
+        button.classList.toggle("is-expanded", isExpanded);
+        button.setAttribute("aria-expanded", String(isExpanded));
+        button.setAttribute(
+          "aria-label",
+          `${isExpanded ? "Collapse" : "Expand"} ${type} asset filters`
+        );
+      });
+
+      assetPanels.forEach((panel) => {
+        const type = panel.dataset.typeAssetsPanel;
+        panel.hidden = !(type === activeType && expandedType === type);
+      });
+
+      assetFilterButtons.forEach((button) => {
+        const type = button.dataset.assetType;
+        const asset = button.dataset.assetValue || null;
+        const isActiveButton =
+          type === activeType &&
+          ((asset === null && activeAsset === null) || asset === activeAsset);
+
+        button.classList.toggle("is-active", isActiveButton);
       });
     };
 
@@ -223,18 +378,21 @@ const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
     };
 
     const syncArchiveLocation = () => {
-      const params = new URLSearchParams(window.location.search);
+      const params = new URLSearchParams();
       const activeArchive = activeArchiveId ? archiveMap.get(activeArchiveId) : null;
-      const isDefaultState = activeType === initialType && !activeArchive;
+      const isDefaultState =
+        activeType === initialType && !activeAsset && !activeArchive;
       let nextUrl = window.location.pathname;
 
       if (!isDefaultState) {
         params.set("type", activeType);
 
+        if (activeAsset) {
+          params.set("asset", activeAsset);
+        }
+
         if (activeArchive?.slug) {
           params.set("slug", activeArchive.slug);
-        } else {
-          params.delete("slug");
         }
 
         const query = params.toString();
@@ -249,29 +407,36 @@ const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
     const resolveInitialSelection = () => {
       const params = new URLSearchParams(window.location.search);
       const requestedType = params.get("type");
+      const requestedAsset = params.get("asset");
       const requestedSlug = params.get("slug");
       const archiveFromSlug = requestedSlug
         ? archiveIndex.find((archive) => archive.slug === requestedSlug)
         : null;
-      const typeFromQuery = types.includes(requestedType ?? "")
-        ? requestedType
-        : archiveFromSlug?.type ?? initialType;
-      const archiveFromQuery = requestedSlug
-        ? archiveIndex.find(
-            (archive) =>
-              archive.slug === requestedSlug && archive.type === typeFromQuery
+      const typeFromQuery = types.includes(requestedType ?? "") ? requestedType : null;
+      const resolvedType = archiveFromSlug?.type ?? typeFromQuery ?? initialType;
+      const archiveFromQuery =
+        archiveFromSlug && archiveFromSlug.type === resolvedType
+          ? archiveFromSlug
+          : null;
+      const resolvedAsset = requestedAsset
+        ? archiveFromQuery?.asset ?? (
+            assetExistsInType(resolvedType, requestedAsset) ? requestedAsset : null
           )
         : null;
 
       return {
-        type: typeFromQuery,
-        archiveId: archiveFromQuery?.id ?? null
+        type: resolvedType,
+        asset: resolvedAsset,
+        archiveId: archiveFromQuery?.id ?? null,
+        expandedType: resolvedAsset ? resolvedType : null
       };
     };
 
     let widgetRenderNonce = 0;
     let activeType = initialType;
+    let activeAsset = null;
     let activeArchiveId = null;
+    let expandedType = null;
 
     const ensureTradingView = async () => {
       if (window.TradingView?.widget) return true;
@@ -344,60 +509,24 @@ const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
       });
     };
 
-    const clearDetail = async () => {
-      activeArchiveId = null;
-      if (assetNode) assetNode.textContent = "--";
-      if (typeNode) typeNode.textContent = activeType.toUpperCase();
-      if (dateNode) dateNode.textContent = "--";
-      if (fileIdNode) fileIdNode.textContent = "--";
-      if (linkNode) {
-        linkNode.href = "#";
-        linkNode.setAttribute("aria-disabled", "true");
-        linkNode.classList.add("action-link--disabled");
-      }
-
-      setDetailSymbol("--");
-      setDetailIntervals(defaultIntervalsForType(activeType));
-      syncArchiveLocation();
-      await renderWidgets(null);
-    };
-
-    const updateFeedVisibility = () => {
-      let shown = 0;
-      const visibleLimit = getVisibleLimit();
-
-      archiveItems.forEach((item) => {
-        const matchesType = item.dataset.archiveType === activeType;
-        const visible = matchesType && shown < visibleLimit;
-
-        item.hidden = !visible;
-        item.classList.toggle("is-hidden", !visible);
-
-        if (matchesType) {
-          shown += 1;
+    const showDetailForArchive = async (archive) => {
+      if (!archive) {
+        if (assetNode) assetNode.textContent = "--";
+        if (typeNode) typeNode.textContent = activeType.toUpperCase();
+        if (dateNode) dateNode.textContent = "--";
+        if (fileIdNode) fileIdNode.textContent = "--";
+        if (linkNode) {
+          linkNode.href = "#";
+          linkNode.setAttribute("aria-disabled", "true");
+          linkNode.classList.add("action-link--disabled");
         }
-      });
 
-      const activeItem = activeArchiveId ? itemMap.get(activeArchiveId) : null;
-      if (activeItem?.hidden) {
-        collapseAll();
-        void clearDetail();
+        setDetailSymbol("--");
+        setDetailIntervals(defaultIntervalsForType(activeType));
+        syncArchiveLocation();
+        await renderWidgets(null);
+        return;
       }
-    };
-
-    const openArchive = async (archiveId) => {
-      const archive = archiveMap.get(archiveId);
-      const item = itemMap.get(archiveId);
-      const body = bodyMap.get(archiveId);
-      const toggle = toggleMap.get(archiveId);
-
-      if (!archive || !item || !body || !toggle) return;
-
-      collapseAll();
-      activeArchiveId = archive.id;
-      item.classList.add("is-active");
-      body.hidden = false;
-      toggle.setAttribute("aria-expanded", "true");
 
       if (assetNode) assetNode.textContent = archive.asset;
       if (typeNode) typeNode.textContent = archive.typeLabel;
@@ -415,12 +544,117 @@ const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
       await renderWidgets(archive);
     };
 
-    const setActiveType = async (type) => {
-      activeType = type;
+    const syncDetail = async () => {
+      const activeArchive = activeArchiveId ? archiveMap.get(activeArchiveId) : null;
+      const filteredArchive =
+        !activeArchive && activeAsset
+          ? latestArchiveForAsset(activeType, activeAsset)
+          : null;
+      const defaultArchive =
+        !activeArchive && !activeAsset
+          ? latestArchiveForType(activeType)
+          : null;
+
+      await showDetailForArchive(activeArchive ?? filteredArchive ?? defaultArchive);
+    };
+
+    const resetOpenArchive = () => {
+      if (activeArchiveId) {
+        collapseArchive(activeArchiveId);
+      }
+
+      activeArchiveId = null;
+    };
+
+    const updateFeedVisibility = () => {
+      let shown = 0;
+      const visibleLimit = getVisibleLimit();
+
+      archiveItems.forEach((item) => {
+        const matchesType = item.dataset.archiveType === activeType;
+        const matchesAsset =
+          !activeAsset || item.dataset.archiveAsset === activeAsset;
+        const isPinnedActive = item.dataset.archiveItem === activeArchiveId;
+        const visible =
+          matchesType &&
+          matchesAsset &&
+          (shown < visibleLimit || isPinnedActive);
+
+        item.hidden = !visible;
+        item.classList.toggle("is-hidden", !visible);
+
+        if (matchesType && matchesAsset && !isPinnedActive) {
+          shown += 1;
+        }
+      });
+
+      const activeItem = activeArchiveId ? itemMap.get(activeArchiveId) : null;
+      if (activeArchiveId && (!activeItem || activeItem.hidden)) {
+        resetOpenArchive();
+      }
+    };
+
+    const openArchive = async (archiveId) => {
+      const archive = archiveMap.get(archiveId);
+      const item = itemMap.get(archiveId);
+      const body = bodyMap.get(archiveId);
+      const toggle = toggleMap.get(archiveId);
+
+      if (!archive || !item || !body || !toggle) return;
+
+      activeType = archive.type;
+      if (activeAsset && activeAsset !== archive.asset) {
+        activeAsset = archive.asset;
+      }
+
       collapseAll();
-      syncTypeButtons();
+      activeArchiveId = archive.id;
+      syncTypeUi();
       updateFeedVisibility();
-      await clearDetail();
+      item.classList.add("is-active");
+      body.hidden = false;
+      toggle.setAttribute("aria-expanded", "true");
+      await syncDetail();
+    };
+
+    const setActiveType = async (type, { expand = false } = {}) => {
+      activeType = type;
+      activeAsset = null;
+      expandedType = expand ? type : null;
+      collapseAll();
+      activeArchiveId = null;
+      syncTypeUi();
+      updateFeedVisibility();
+      await syncDetail();
+    };
+
+    const setActiveAsset = async (asset) => {
+      activeAsset = asset;
+      expandedType = activeType;
+      collapseAll();
+      activeArchiveId = null;
+      syncTypeUi();
+      updateFeedVisibility();
+      await syncDetail();
+    };
+
+    const toggleExpandedType = async (type) => {
+      if (type !== activeType) {
+        await setActiveType(type, { expand: true });
+        return;
+      }
+
+      if (expandedType === type) {
+        expandedType = null;
+        activeAsset = null;
+        syncTypeUi();
+        updateFeedVisibility();
+        await syncDetail();
+        return;
+      }
+
+      expandedType = type;
+      syncTypeUi();
     };
 
     typeButtons.forEach((button) => {
@@ -431,6 +665,22 @@ const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
       });
     });
 
+    expandButtons.forEach((button) => {
+      button.addEventListener("click", async () => {
+        const type = button.dataset.typeExpand;
+        if (!type) return;
+        await toggleExpandedType(type);
+      });
+    });
+
+    assetFilterButtons.forEach((button) => {
+      button.addEventListener("click", async () => {
+        const asset = button.dataset.assetValue || null;
+        const nextAsset = asset === activeAsset ? null : asset;
+        await setActiveAsset(nextAsset);
+      });
+    });
+
     toggleButtons.forEach((button) => {
       button.addEventListener("click", async () => {
         const archiveId = button.dataset.archiveToggle;
@@ -438,7 +688,8 @@ const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
 
         if (activeArchiveId === archiveId) {
           collapseArchive(archiveId);
-          await clearDetail();
+          activeArchiveId = null;
+          await syncDetail();
           return;
         }
 
@@ -448,17 +699,22 @@ const initialIntervals = timeframeDefaults[initialType] ?? ["--", "--", "--"];
 
     const initialSelection = resolveInitialSelection();
     activeType = initialSelection.type;
+    activeAsset = initialSelection.asset;
+    activeArchiveId = initialSelection.archiveId;
+    expandedType = initialSelection.expandedType;
 
-    syncTypeButtons();
+    syncTypeUi();
     updateFeedVisibility();
-    void clearDetail().then(async () => {
-      if (initialSelection.archiveId) {
-        await openArchive(initialSelection.archiveId);
-      }
-    });
+
+    if (initialSelection.archiveId) {
+      void openArchive(initialSelection.archiveId);
+    } else {
+      void syncDetail();
+    }
 
     window.addEventListener("resize", () => {
       updateFeedVisibility();
+      void syncDetail();
     });
   };
 
