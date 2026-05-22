@@ -12,8 +12,10 @@ type ArchiveRenderable = {
   title: string;
   dateDisplay: string;
   fileId: string;
+  slotTimeUtc: string;
   tradingviewSymbol: string;
   tradingviewTimeframes: string[];
+  timeframeLabel: string;
   Content: any;
 };
 
@@ -44,7 +46,7 @@ const typeCopy: Record<string, string> = {
 
 const timeframeDefaults: Record<string, string[]> = {
   continuous: ["1M", "1W", "1D", "4h"],
-  instant: ["15"]
+  instant: ["15", "30", "1h", "2h"]
 };
 const timeframeWidgetMap: Record<string, string> = {
   "1M": "M",
@@ -67,6 +69,12 @@ const archiveIndex = archives.map(({ Content, ...archive }) => archive);
 const widgetCount = Math.max(
   1,
   ...archives.map((archive) => archive.tradingviewTimeframes.length)
+);
+const latestBatchKeyByType = new Map(
+  types.map((type) => [
+    type,
+    archiveIndex.find((archive) => archive.type === type)?.slotTimeUtc ?? null
+  ])
 );
 const typeFilterIndex: TypeFilterMeta[] = types.map((type) => {
   const items = archiveIndex.filter((archive) => archive.type === type);
@@ -175,7 +183,12 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
             <article
               class:list={[
                 "archive-item",
-                { "is-hidden": archive.type !== initialType }
+                {
+                  "is-hidden": archive.type !== initialType,
+                  "is-older-batch":
+                    latestBatchKeyByType.get(archive.type) !== null &&
+                    archive.slotTimeUtc !== latestBatchKeyByType.get(archive.type)
+                }
               ]}
               data-archive-item={archive.id}
               data-archive-type={archive.type}
@@ -191,7 +204,9 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
               >
                 <span class="archive-item__topline">
                   <span class="archive-item__meta">
-                    <span class="archive-item__asset">{archive.asset}</span>
+                    <span class="archive-item__timeframe">
+                      {archive.timeframeLabel}
+                    </span>
                     <span
                       class:list={[
                         "bias-tag",

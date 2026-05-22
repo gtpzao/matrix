@@ -1,0 +1,42 @@
+{
+  "cdpPort": 9222,
+  "layoutName": null,
+  "assets": [
+    {
+      "asset": "BTCUSD",
+      "tradingviewSymbol": "CRYPTO:BTCUSD",
+      "instant": true,
+      "continuous": true
+    },
+    {
+      "asset": "ETHUSD",
+      "tradingviewSymbol": "CRYPTO:ETHUSD",
+      "instant": true,
+      "continuous": true
+    },
+    {
+      "asset": "BNBUSD",
+      "tradingviewSymbol": "CRYPTO:BNBUSD",
+      "instant": true,
+      "continuous": true
+    },
+    {
+      "asset": "XRPUSD",
+      "tradingviewSymbol": "CRYPTO:XRPUSD",
+      "instant": true,
+      "continuous": true
+    },
+    {
+      "asset": "SOLUSD",
+      "tradingviewSymbol": "CRYPTO:SOLUSD",
+      "instant": true,
+      "continuous": true
+    },
+    {
+      "asset": "TRXUSD",
+      "tradingviewSymbol": "CRYPTO:TRXUSD",
+      "instant": true,
+      "continuous": true
+    }
+  ]
+}

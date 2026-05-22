@@ -662,13 +662,29 @@ img {
   transition:
     border-color 200ms ease,
     box-shadow 200ms ease,
-    background 200ms ease;
+    background 200ms ease,
+    opacity 200ms ease;
 }
 
 .archive-item.is-active {
   border-color: var(--line-strong);
   background: rgba(5, 12, 8, 0.98);
   box-shadow: 0 0 24px rgba(141, 255, 180, 0.06);
+}
+
+.archive-item.is-older-batch:not(.is-active) {
+  opacity: 0.65;
+  background: rgba(24, 27, 27, 0.72);
+}
+
+.archive-item.is-older-batch:not(.is-active):hover,
+.archive-item.is-older-batch:not(.is-active):focus-within {
+  opacity: 1;
+  background: rgba(24, 27, 27, 0.72);
+}
+
+.archive-item.is-older-batch.is-active {
+  background: rgba(24, 27, 27, 0.88);
 }
 
 .archive-item.is-hidden {
@@ -710,7 +726,7 @@ img {
   min-width: 0;
 }
 
-.archive-item__asset {
+.archive-item__timeframe {
   color: var(--accent);
 }
 

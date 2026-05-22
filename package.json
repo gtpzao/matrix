@@ -8,7 +8,21 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "matrix:doctor": "node ./tools/matrix-capture/cli.mjs doctor",
+    "matrix:capture": "node ./tools/matrix-capture/cli.mjs capture",
+    "matrix:capture:instant": "node ./tools/matrix-capture/cli.mjs capture instant now",
+    "matrix:capture:continuous": "node ./tools/matrix-capture/cli.mjs capture continuous now",
+    "matrix:dossier": "node ./tools/matrix-capture/cli.mjs dossier",
+    "matrix:promote": "node ./tools/matrix-capture/cli.mjs promote",
+    "matrix:cleanup": "node ./tools/matrix-capture/cli.mjs cleanup",
+    "matrix:pipeline": "node ./tools/matrix-capture/cli.mjs pipeline",
+    "matrix:pipeline:instant": "node ./tools/matrix-capture/cli.mjs pipeline instant now",
+    "matrix:pipeline:continuous": "node ./tools/matrix-capture/cli.mjs pipeline continuous now"
+  },
+  "dependencies": {
+    "chrome-remote-interface": "^0.33.2",
+    "gray-matter": "^4.0.3"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
