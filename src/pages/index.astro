@@ -1,7 +1,9 @@
 ---
+//[Carrega layout base e gerador de wordmark para montar entrada visual inicial.]
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { buildGlitchWordmark } from "../lib/glitchWordmark";
 
+//[Prepara letras animadas do titulo principal antes de renderizar markup da landing.]
 const titleWords = buildGlitchWordmark(["MATRIX", "ARCHIVE"]);
 ---
 

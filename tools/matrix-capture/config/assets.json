@@ -13,30 +13,6 @@
       "tradingviewSymbol": "CRYPTO:ETHUSD",
       "instant": true,
       "continuous": true
-    },
-    {
-      "asset": "BNBUSD",
-      "tradingviewSymbol": "CRYPTO:BNBUSD",
-      "instant": true,
-      "continuous": true
-    },
-    {
-      "asset": "XRPUSD",
-      "tradingviewSymbol": "CRYPTO:XRPUSD",
-      "instant": true,
-      "continuous": true
-    },
-    {
-      "asset": "SOLUSD",
-      "tradingviewSymbol": "CRYPTO:SOLUSD",
-      "instant": true,
-      "continuous": true
-    },
-    {
-      "asset": "TRXUSD",
-      "tradingviewSymbol": "CRYPTO:TRXUSD",
-      "instant": true,
-      "continuous": true
     }
   ]
 }

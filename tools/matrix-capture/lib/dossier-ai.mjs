@@ -4,6 +4,7 @@ import { tmpdir } from "os";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
+//[Define defaults e limites textuais usados para gerar conteudo curto de dossier.]
 const DEFAULT_CODEX_BIN = "npx";
 const DEFAULT_CODEX_ARGS = ["-y", "@openai/codex"];
 const PREVIEW_MAX_WORDS = 15;
@@ -12,6 +13,7 @@ const ALLOWED_BIAS = new Set(["BUY", "SELL"]);
 const libDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(libDir, "../..");
 
+//[Remove acentos, caracteres estranhos e espacos duplicados antes de validar texto.]
 function sanitizeText(value) {
   return String(value || "")
     .normalize("NFD")
@@ -23,11 +25,13 @@ function sanitizeText(value) {
     .trim();
 }
 
+//[Corta texto por quantidade maxima de palavras depois da normalizacao ASCII.]
 function truncateWords(value, maxWords) {
   const words = sanitizeText(value).split(/\s+/).filter(Boolean);
   return words.slice(0, maxWords).join(" ");
 }
 
+//[Exige texto nao vazio em campos obrigatorios retornados pela analise AI.]
 function ensureText(value, label) {
   const text = sanitizeText(value);
   if (!text) {
@@ -36,6 +40,7 @@ function ensureText(value, label) {
   return text;
 }
 
+//[Valida analises por timeframe, preservando ordem esperada e rejeitando duplicatas.]
 function normalizeAnalyses(rawAnalyses, timeframes) {
   if (!Array.isArray(rawAnalyses)) {
     throw new Error("Codex dossier response is missing the analyses array.");
@@ -73,6 +78,7 @@ function normalizeAnalyses(rawAnalyses, timeframes) {
   });
 }
 
+//[Resolve binario Codex, argumentos default e override opcional de modelo.]
 function resolveCodexCommand() {
   const binary = String(process.env.MATRIX_DOSSIER_CODEX_BIN || DEFAULT_CODEX_BIN).trim();
   const model = String(process.env.MATRIX_DOSSIER_CODEX_MODEL || "").trim();
@@ -88,6 +94,7 @@ function resolveCodexCommand() {
   return { binary, args, model };
 }
 
+//[Gera schema JSON estrito para resposta do Codex conforme timeframes capturados.]
 function schemaForTimeframes(timeframes) {
   return {
     type: "object",
@@ -124,6 +131,7 @@ function schemaForTimeframes(timeframes) {
   };
 }
 
+//[Monta prompt operacional curto, exigindo portugues sem acentos e JSON puro.]
 function buildPrompt({ asset, mode, tradingviewSymbol, tradingviewTimeframes }) {
   const imageMap = tradingviewTimeframes
     .map((timeframe, index) => `Imagem ${index + 1}: ${timeframe}`)
@@ -148,10 +156,12 @@ function buildPrompt({ asset, mode, tradingviewSymbol, tradingviewTimeframes }) 
   ].join(" ");
 }
 
+//[Escapa literal PowerShell usado para passar paths e argumentos no Windows.]
 function quotePowerShellLiteral(value) {
   return `'${String(value).replace(/'/g, "''")}'`;
 }
 
+//[Cria processo Codex com pipe por stdin ou PowerShell wrapper no Windows.]
 function spawnCodexProcess(binary, args, promptPath) {
   if (process.platform !== "win32") {
     return {
@@ -191,6 +201,7 @@ function spawnCodexProcess(binary, args, promptPath) {
   };
 }
 
+//[Executa Codex CLI com imagens, schema de saida e workspace em modo read-only.]
 async function runCodexExec({
   codexBinary,
   codexArgs,
@@ -262,6 +273,7 @@ async function runCodexExec({
   });
 }
 
+//[Lê arquivo JSON produzido pelo Codex e melhora erro quando parse falha.]
 async function readJsonFile(filePath, label) {
   const raw = await readFile(filePath, "utf8");
 
@@ -272,6 +284,7 @@ async function readJsonFile(filePath, label) {
   }
 }
 
+//[Prepara arquivos temporarios, chama Codex e devolve payload bruto validavel.]
 async function fetchAiAnalysis({ asset, mode, tradingviewSymbol, tradingviewTimeframes, captureFiles }) {
   const { binary, args, model } = resolveCodexCommand();
   const tempRoot = await mkdtemp(resolve(tmpdir(), "matrix-dossier-codex-"));
@@ -314,6 +327,7 @@ async function fetchAiAnalysis({ asset, mode, tradingviewSymbol, tradingviewTime
   }
 }
 
+//[Valida payload final da AI e normaliza bias, preview e analises por timeframe.]
 export async function analyzeDossierContent({
   asset,
   mode,

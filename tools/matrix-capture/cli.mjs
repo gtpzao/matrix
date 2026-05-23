@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
+//[Importa comandos operacionais expostos pela CLI para captura, dossier, promote e limpeza.]
 import { runCapture, runDoctor } from "./lib/runner.mjs";
 import { runCleanup } from "./lib/cleanup.mjs";
 import { runDossier } from "./lib/dossier.mjs";
 import { runPipeline } from "./lib/pipeline.mjs";
 import { runPromote } from "./lib/promote.mjs";
 
+//[Mostra sintaxe suportada quando usuario chama ajuda ou fornece argumentos invalidos.]
 function printUsage() {
   console.error(`Usage:
   node tools/matrix-capture/cli.mjs doctor
@@ -16,12 +18,14 @@ function printUsage() {
   node tools/matrix-capture/cli.mjs cleanup [--folder btcusd-continuous,btcusd-instant-15] [--dry-run] [--include-failed]`);
 }
 
+//[Cria erro marcado para imprimir usage junto da mensagem de validacao.]
 function usageError(message) {
   const error = new Error(message);
   error.showUsage = true;
   return error;
 }
 
+//[Separa posicionais e flags, normalizando listas separadas por virgula para arrays.]
 function parseArgs(argv) {
   const positionals = [];
   const options = {
@@ -70,6 +74,7 @@ function parseArgs(argv) {
   return { positionals, options };
 }
 
+//[Despacha comando solicitado para modulo correto e define exit code operacional.]
 async function main() {
   const { positionals, options } = parseArgs(process.argv.slice(2));
   const command = positionals[0];
@@ -136,6 +141,7 @@ async function main() {
   throw usageError(`Unknown command "${command}".`);
 }
 
+//[Converte falhas nao tratadas em saida legivel e codigo de erro consistente.]
 main().catch((error) => {
   console.error(error.message);
   if (error.showUsage) {

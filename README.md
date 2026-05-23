@@ -31,19 +31,18 @@ captureTimeUtc: "2026-05-21T08:57:34Z"
 bias: "BUY"
 tradingviewSymbol: "CRYPTO:BTCUSD"
 tradingviewTimeframes:
-  - "1M"
   - "1W"
   - "1D"
   - "4h"
 slideImages:
-  - "./captures/continuous_btcusd_2026-05-21_08-57_1M.png"
+  - "./captures/continuous_btcusd_2026-05-21_08-57_1W.png"
 ---
 ```
 
 ## Archive console behavior
 
-- `continuous` dossiers typically use `1M / 1W / 1D / 4h`
-- `instant` dossiers are one timeframe each, typically `15 / 30 / 1h / 2h`
+- `continuous` dossiers typically use `1W / 1D / 4h`
+- `instant` dossiers are one timeframe each, currently `1h / 2h`
 - center list supports one expanded archive at a time
 - `OPEN ARCHIVE` goes to full archive page
 
@@ -55,9 +54,9 @@ slideImages:
 - `npm run matrix:doctor`
 - `npm run matrix:capture:instant`
 - `npm run matrix:capture:continuous`
-- `npm run matrix:dossier -- instant --folder btcusd-instant-15,btcusd-instant-30`
+- `npm run matrix:dossier -- instant --folder btcusd-instant-1h,ethusd-instant-2h`
 - `npm run matrix:dossier -- continuous --folder btcusd-continuous`
-- `npm run matrix:promote -- --folder btcusd-instant-15,btcusd-instant-30,btcusd-continuous`
+- `npm run matrix:promote -- --folder btcusd-instant-1h,ethusd-instant-2h,btcusd-continuous`
 - `npm run matrix:pipeline:instant`
 - `npm run matrix:pipeline:continuous`
 - `npm run matrix:cleanup`
@@ -81,10 +80,10 @@ Current dossier generation rules:
 
 Expected operational cadence:
 
-- every `15m`: run `npm run matrix:pipeline:instant`
+- every `1h`: run `npm run matrix:pipeline:instant`
 - every `4h`: run `npm run matrix:pipeline:continuous`
 
-With the current timeframe map, one `instant` run generates `4` dossiers per enabled asset (`15`, `30`, `1h`, `2h`), and one `continuous` run generates `1` dossier per enabled asset with `1M`, `1W`, `1D`, `4h`.
+With the current timeframe map, one `instant` run generates `2` dossiers per enabled asset (`1h`, `2h`), and one `continuous` run generates `1` dossier per enabled asset with `1W`, `1D`, `4h`.
 
 Recommended cleanup policy:
 

@@ -1,3 +1,4 @@
+//[Descreve parametros temporais usados por cada camada visual do efeito glitch.]
 export type GlitchGlyphProfile = {
   upperDelay: number;
   upperDuration: number;
@@ -9,16 +10,19 @@ export type GlitchGlyphProfile = {
   noiseBDuration: number;
 };
 
+//[Agrupa caractere renderizado com indice global e perfil visual escolhido deterministicamente.]
 export type GlitchGlyph = {
   glyph: string;
   index: number;
   profile: GlitchGlyphProfile;
 };
 
+//[Representa palavra quebrada em glyphs para composicao animada no template Astro.]
 export type GlitchWord = {
   glyphs: GlitchGlyph[];
 };
 
+//[Mantem biblioteca finita de perfis para repetir animacoes sem gerar aleatoriedade em runtime.]
 const glyphProfiles: GlitchGlyphProfile[] = [
   { upperDelay: -0.58, upperDuration: 2.65, lowerDelay: -2.31, lowerDuration: 4.1, noiseADelay: -1.12, noiseADuration: 2.25, noiseBDelay: -3.44, noiseBDuration: 3.95 },
   { upperDelay: -2.07, upperDuration: 3.38, lowerDelay: -0.84, lowerDuration: 2.95, noiseADelay: -3.62, noiseADuration: 4.3, noiseBDelay: -0.28, noiseBDuration: 2.45 },
@@ -35,6 +39,7 @@ const glyphProfiles: GlitchGlyphProfile[] = [
   { upperDelay: -0.71, upperDuration: 2.39, lowerDelay: -2.96, lowerDuration: 4.02, noiseADelay: -3.56, noiseADuration: 4.24, noiseBDelay: -1.48, noiseBDuration: 3.18 }
 ];
 
+//[Converte palavras em glyphs indexados, preservando ordem global para animacao visual consistente.]
 export function buildGlitchWordmark(words: string[]): GlitchWord[] {
   let offset = 0;
 

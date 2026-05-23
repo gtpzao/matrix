@@ -1,4 +1,5 @@
 ---
+//[Carrega dados, layout e helpers usados por cada pagina estatica de dossier.]
 import { getCollection, render } from "astro:content";
 import ArchiveDeck from "../../../components/ArchiveDeck.astro";
 import ConsolePanel from "../../../components/ConsolePanel.astro";
@@ -12,6 +13,7 @@ import {
   sortArchives
 } from "../../../lib/archives";
 
+//[Gera rotas estaticas para cada dossier usando tipo normalizado e slug canonical.]
 export async function getStaticPaths() {
   const entries = sortArchives(await getCollection("archives"));
 
@@ -27,6 +29,7 @@ export async function getStaticPaths() {
   });
 }
 
+//[Resolve conteudo da pagina atual, midias publicadas e link de retorno ao console.]
 const { entry, resolved } = Astro.props;
 const { Content } = await render(entry);
 const media = resolveArchiveMedia(entry);
@@ -38,6 +41,7 @@ const archiveHref = `/archive?${new URLSearchParams({
   slug: resolved.slug
 }).toString()}`;
 
+//[Falha cedo quando parametros de rota nao batem com entry recebido pelo build.]
 if (
   archiveType(entry) !== Astro.params.type ||
   archiveSlug(entry) !== Astro.params.slug

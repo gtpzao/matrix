@@ -542,7 +542,8 @@ img {
 
 .type-card__expand:hover,
 .type-card__expand:focus-visible,
-.type-card__expand.is-active {
+.type-card__expand.is-active,
+.type-card__expand.is-expanded {
   border-color: var(--line-strong);
   background: rgba(5, 12, 8, 0.94);
   box-shadow:
@@ -631,6 +632,83 @@ img {
 .type-asset-row__count {
   color: inherit;
   opacity: 0.88;
+}
+
+.type-timeframe-filter {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(141, 255, 180, 0.1);
+}
+
+.type-timeframe-filter__label {
+  padding: 0 0.25rem;
+  color: var(--muted);
+  font: 500 0.66rem/1 var(--mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.type-timeframe-filter__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.type-timeframe-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.5rem 0.55rem;
+  border: 1px solid rgba(141, 255, 180, 0.1);
+  border-radius: 0.35rem;
+  background: rgba(1, 5, 3, 0.58);
+  color: var(--muted);
+  cursor: pointer;
+  font: 500 0.72rem/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.type-timeframe-chip--all {
+  grid-column: 1 / -1;
+}
+
+.type-timeframe-chip:not(.type-timeframe-chip--all) {
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 3rem;
+  padding-block: 0.56rem;
+  text-align: center;
+}
+
+.type-timeframe-chip:not(.type-timeframe-chip--all) span {
+  line-height: 1;
+}
+
+.type-timeframe-chip:not(.type-timeframe-chip--all) span:last-child {
+  font-size: 0.68rem;
+  opacity: 0.82;
+}
+
+.type-timeframe-chip:hover,
+.type-timeframe-chip:focus-visible {
+  color: var(--accent);
+  border-color: rgba(141, 255, 180, 0.16);
+}
+
+.type-timeframe-chip.is-active {
+  color: var(--accent-strong);
+  border-color: var(--line-strong);
+  background: rgba(6, 14, 10, 0.94);
 }
 
 .feed-list {

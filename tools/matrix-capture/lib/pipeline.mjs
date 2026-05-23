@@ -2,16 +2,19 @@ import { runCapture } from "./runner.mjs";
 import { runDossier } from "./dossier.mjs";
 import { runPromote } from "./promote.mjs";
 
+//[Valida modo antes de iniciar fluxo encadeado que pode gravar arquivos.]
 function ensureMode(mode) {
   if (mode !== "instant" && mode !== "continuous") {
     throw new Error(`Unsupported mode "${mode}". Use "instant" or "continuous".`);
   }
 }
 
+//[Remove folders repetidos preservando ordem de captura bem-sucedida no pipeline.]
 function unique(values) {
   return [...new Set(values)];
 }
 
+//[Executa captura, dossier e promote, pulando etapas quando nao ha insumo valido.]
 export async function runPipeline(mode, options = {}) {
   ensureMode(mode);
 

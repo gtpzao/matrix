@@ -10,6 +10,7 @@ import {
   sameUtcMinute
 } from "./timeframes.mjs";
 
+//[Lista atalhos tentados para exportar imagem nativa do TradingView para clipboard.]
 const NATIVE_EXPORT_SHORTCUTS = [
   { key: "s", modifiers: ["ctrl", "shift"], label: "Ctrl+Shift+S" },
   { key: "s", modifiers: ["alt"], label: "Alt+S" },
@@ -20,36 +21,43 @@ const NATIVE_EXPORT_SHORTCUTS = [
 const CONTINUOUS_MINUTE_BUFFER_SECONDS = 30;
 const MIN_CAPTURE_BYTES = 20_000;
 
+//[Aguarda intervalo curto entre interacoes CDP e exportacoes de imagem.]
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+//[Gera identificador UTC compacto para isolar cada execucao em staging temporario.]
 function formatRunId(date = new Date()) {
   const compact = date.toISOString().replace(/[-:]/g, "");
   return compact.replace(/\.\d{3}Z$/, "Z");
 }
 
+//[Bloqueia modos desconhecidos antes de tocar TradingView ou filesystem operacional.]
 function ensureMode(mode) {
   if (mode !== "instant" && mode !== "continuous") {
     throw new Error(`Unsupported mode "${mode}". Use "instant" or "continuous".`);
   }
 }
 
+//[Cria diretorio pai antes de gravar JSON ou capturas em paths novos.]
 async function mkdirParent(targetPath) {
   await mkdir(dirname(targetPath), { recursive: true });
 }
 
+//[Substitui diretorio final por temporario completo, reduzindo estados intermediarios visiveis.]
 async function replaceDirectory(targetDir, tempDir) {
   await mkdir(dirname(targetDir), { recursive: true });
   await rm(targetDir, { recursive: true, force: true });
   await rename(tempDir, targetDir);
 }
 
+//[Grava JSON indentado apos garantir que diretorio pai existe no disco.]
 async function writeJson(filePath, payload) {
   await mkdirParent(filePath);
   await writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
 }
 
+//[Filtra ativos habilitados por modo e por lista opcional recebida na CLI.]
 function selectAssets(config, mode, assetFilter) {
   const wanted = assetFilter.size > 0 ? assetFilter : null;
   return config.assets.filter((entry) => {
@@ -63,6 +71,7 @@ function selectAssets(config, mode, assetFilter) {
   });
 }
 
+//[Evita iniciar continuous perto da virada de minuto para manter capturas consistentes.]
 async function waitForContinuousMinuteWindow() {
   const now = new Date();
   const remainingSeconds = 60 - now.getUTCSeconds();
@@ -75,6 +84,7 @@ async function waitForContinuousMinuteWindow() {
   return waitMs;
 }
 
+//[Tenta atalhos de exportacao, salva clipboard como PNG e valida tamanho minimo.]
 async function captureNativeTradingViewImage(desktop, outputPath) {
   let lastError = null;
   for (const shortcut of NATIVE_EXPORT_SHORTCUTS) {
@@ -100,6 +110,7 @@ async function captureNativeTradingViewImage(desktop, outputPath) {
   throw new Error(`TradingView native export failed. ${lastError || "No screenshot shortcut succeeded."}`);
 }
 
+//[Cria pasta temporaria limpa para uma captura especifica dentro do run.]
 async function prepareTempFolder(baseRoot, runId, folderName) {
   const tempDir = resolve(baseRoot, "_tmp", runId, folderName);
   await rm(tempDir, { recursive: true, force: true });
@@ -107,6 +118,7 @@ async function prepareTempFolder(baseRoot, runId, folderName) {
   return tempDir;
 }
 
+//[Move captura incompleta para _failed e grava detalhes estruturados do erro.]
 async function moveFailedCapture(baseRoot, runId, folderName, tempDir, details) {
   const failedDir = resolve(baseRoot, "_failed", runId, folderName);
   await rm(failedDir, { recursive: true, force: true });
@@ -116,6 +128,7 @@ async function moveFailedCapture(baseRoot, runId, folderName, tempDir, details) 
   return failedDir;
 }
 
+//[Finaliza captura bem-sucedida escrevendo manifest e movendo temp para destino.]
 async function finalizeSuccessfulCapture(baseRoot, folderName, tempDir, manifest) {
   await writeJson(resolve(tempDir, "capture_manifest.json"), manifest);
   const finalDir = resolve(baseRoot, folderName);
@@ -123,6 +136,7 @@ async function finalizeSuccessfulCapture(baseRoot, folderName, tempDir, manifest
   return finalDir;
 }
 
+//[Captura um dossier planejado, trocando symbol/timeframes e preservando falhas isoladas.]
 async function captureSingleDossier({
   desktop,
   inboxTvRoot,
@@ -234,6 +248,7 @@ async function captureSingleDossier({
   }
 }
 
+//[Verifica conexao CDP, paths resolvidos e estado atual do grafico TradingView.]
 export async function runDoctor({ configPath } = {}) {
   const config = loadConfig(configPath);
   const desktop = new TradingViewDesktop({ port: config.cdpPort });
@@ -254,6 +269,7 @@ export async function runDoctor({ configPath } = {}) {
   }
 }
 
+//[Planeja ou executa capturas para todos ativos e timeframes habilitados do modo.]
 export async function runCapture(mode, { configPath, assetNames = [], dryRun = false } = {}) {
   ensureMode(mode);
   const config = loadConfig(configPath);

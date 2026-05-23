@@ -1,10 +1,12 @@
 ---
+//[Define contrato pequeno do painel reutilizavel usado em console e paginas.]
 interface Props {
   title?: string;
   eyebrow?: string;
   className?: string;
 }
 
+//[Lê props Astro e garante classe vazia como fallback seguro para composicao.]
 const { title, eyebrow, className = "" } = Astro.props;
 ---
 

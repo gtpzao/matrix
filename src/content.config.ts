@@ -1,5 +1,6 @@
 import { defineCollection, z } from "astro:content";
 
+//[Define contrato minimo da colecao archives, garantindo frontmatter essencial antes do build Astro.]
 const archives = defineCollection({
   schema: z.object({
     title: z.string(),
@@ -15,4 +16,5 @@ const archives = defineCollection({
   })
 });
 
+//[Exporta colecoes consumidas pelas rotas Astro durante sync de conteudo e renderizacao.]
 export const collections = { archives };

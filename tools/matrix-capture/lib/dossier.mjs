@@ -15,19 +15,23 @@ import {
   modeTimeframes
 } from "./timeframes.mjs";
 
+//[Reconhece nomes canonical de capturas e extrai modo, ativo, data, hora e timeframe.]
 const CAPTURE_FILE_PATTERN = /^(instant|continuous)_([a-z0-9]+)_(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2})_(1M|1W|1D|4h|2h|1h|30|15)\.png$/i;
 
+//[Valida modo informado antes de inspecionar staging e chamar etapas que gravam arquivos.]
 function ensureMode(mode) {
   if (mode !== "instant" && mode !== "continuous") {
     throw new Error(`Unsupported mode "${mode}". Use "instant" or "continuous".`);
   }
 }
 
+//[Cria identificador UTC compacto para pastas temporarias geradas durante dossier.]
 function formatRunId(date = new Date()) {
   const compact = date.toISOString().replace(/[-:]/g, "");
   return compact.replace(/\.\d{3}Z$/, "Z");
 }
 
+//[Lê JSON opcional quando existe, retornando null para manifest ausente.]
 async function readJsonIfExists(filePath) {
   if (!existsSync(filePath)) {
     return null;
@@ -36,6 +40,7 @@ async function readJsonIfExists(filePath) {
   return JSON.parse(raw);
 }
 
+//[Extrai metadados do nome canonical ou retorna null quando padrao falha.]
 function parseCaptureFileName(fileName) {
   const match = fileName.match(CAPTURE_FILE_PATTERN);
   if (!match) {
@@ -51,6 +56,7 @@ function parseCaptureFileName(fileName) {
   };
 }
 
+//[Compara duas datas no mesmo minuto UTC para validar consistencia da captura.]
 function sameUtcMinute(left, right) {
   return (
     left.getUTCFullYear() === right.getUTCFullYear() &&
@@ -61,6 +67,7 @@ function sameUtcMinute(left, right) {
   );
 }
 
+//[Ordena timeframes conforme ordem esperada do modo para frontmatter e analise.]
 function orderedTimeframes(mode, timeframes) {
   const expectedOrder = modeTimeframes(mode);
   return [...timeframes].sort((left, right) => {
@@ -68,6 +75,7 @@ function orderedTimeframes(mode, timeframes) {
   });
 }
 
+//[Renderiza index.md completo com frontmatter e secoes exigidas pelo contrato.]
 function renderIndexMarkdown({
   asset,
   mode,
@@ -118,6 +126,7 @@ ${analysisBlocks}
 `;
 }
 
+//[Monta objeto frontmatter usado para calcular slug antes de escrever arquivo.]
 function buildFrontmatter({
   title,
   asset,
@@ -143,6 +152,7 @@ function buildFrontmatter({
   };
 }
 
+//[Normaliza metadados de manifest para comparar com arquivos PNG encontrados.]
 function metadataFromManifest(manifest) {
   if (!manifest || typeof manifest !== "object") {
     return null;
@@ -164,6 +174,7 @@ function metadataFromManifest(manifest) {
   };
 }
 
+//[Inspeciona pasta de captura, valida PNGs e calcula destinos canonicos do dossier.]
 async function inspectCaptureFolder(folderPath) {
   const folderName = folderPath.split(/[/\\]/).pop() || folderPath;
   const manifestPath = resolve(folderPath, "capture_manifest.json");
@@ -276,12 +287,14 @@ async function inspectCaptureFolder(folderPath) {
   };
 }
 
+//[Troca diretorio de destino por temp ja pronto, removendo versao anterior.]
 async function replaceDirectory(targetDir, tempDir) {
   await mkdir(dirname(targetDir), { recursive: true });
   await rm(targetDir, { recursive: true, force: true });
   await rename(tempDir, targetDir);
 }
 
+//[Prepara pasta temporaria de incoming com subpasta captures ja criada.]
 async function prepareTempFolder(baseRoot, runId, folderName) {
   const tempDir = resolve(baseRoot, "_tmp", runId, folderName);
   await rm(tempDir, { recursive: true, force: true });
@@ -289,6 +302,7 @@ async function prepareTempFolder(baseRoot, runId, folderName) {
   return tempDir;
 }
 
+//[Lista folders de inbox ignorando diretorios internos iniciados por underline.]
 async function listInboxFolders(inboxTvRoot) {
   return (await readdir(inboxTvRoot, { withFileTypes: true }))
     .filter((entry) => entry.isDirectory())
@@ -296,6 +310,7 @@ async function listInboxFolders(inboxTvRoot) {
     .filter((name) => !name.startsWith("_"));
 }
 
+//[Converte capturas validadas em dossiers staged, chamando AI fora do dry-run.]
 export async function runDossier(mode, { configPath, assetNames = [], folders = [], dryRun = false } = {}) {
   ensureMode(mode);
   const config = loadConfig(configPath);

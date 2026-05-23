@@ -3,10 +3,12 @@ import { existsSync } from "fs";
 import { resolve } from "path";
 import { loadConfig } from "./config.mjs";
 
+//[Remove duplicatas preservando primeira ocorrencia para relatorios de limpeza previsiveis.]
 function unique(values) {
   return [...new Set(values)];
 }
 
+//[Normaliza nomes recebidos por flag, removendo vazios antes de comparar folders.]
 function normalizeFolderNames(folders) {
   return unique(
     folders
@@ -15,6 +17,7 @@ function normalizeFolderNames(folders) {
   );
 }
 
+//[Lista subdiretorios existentes, retornando vazio quando root ainda nao existe.]
 async function listDirectoryNames(rootPath) {
   if (!existsSync(rootPath)) {
     return [];
@@ -25,6 +28,7 @@ async function listDirectoryNames(rootPath) {
     .map((entry) => entry.name);
 }
 
+//[Seleciona folders removiveis, preservando failed salvo quando flag explicita permite.]
 function folderCleanupTargets(folderNames, { includeFailed }) {
   return folderNames.filter((name) => {
     if (name === "_tmp") {
@@ -37,6 +41,7 @@ function folderCleanupTargets(folderNames, { includeFailed }) {
   });
 }
 
+//[Remove folders de uma raiz operacional, respeitando dry-run e filtros manuais.]
 async function cleanupOneRoot(rootPath, {
   folders = [],
   includeFailed = false,
@@ -73,6 +78,7 @@ async function cleanupOneRoot(rootPath, {
   };
 }
 
+//[Limpa inbox e incoming com mesmas regras, devolvendo resumo para CLI.]
 export async function runCleanup({
   configPath,
   folders = [],

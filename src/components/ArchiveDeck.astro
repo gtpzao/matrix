@@ -1,4 +1,5 @@
 ---
+//[Define dados necessarios para renderizar capturas publicadas ou placeholder informativo.]
 interface Props {
   title: string;
   asset: string;
@@ -15,6 +16,7 @@ const {
   slides = []
 } = Astro.props;
 
+//[Remove slides vazios e duplicados antes de montar figuras da galeria.]
 const media = [...new Set(slides.filter(Boolean))];
 ---
 

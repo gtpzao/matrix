@@ -13,12 +13,15 @@ import {
   VALID_TYPE
 } from "./archive-contract.mjs";
 
+//[Lista codigos Windows em que rename pode falhar temporariamente durante replace.]
 const WINDOWS_RETRYABLE_CODES = new Set(["EPERM", "EACCES", "ENOTEMPTY"]);
 
+//[Espera pequena janela entre tentativas de rename em filesystem Windows.]
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+//[Garante array de strings nao vazias para campos frontmatter com listas.]
 function ensureArrayOfStrings(value, fieldName) {
   assert(Array.isArray(value), `"${fieldName}" must be an array.`);
   value.forEach((item, index) => {
@@ -26,15 +29,18 @@ function ensureArrayOfStrings(value, fieldName) {
   });
 }
 
+//[Extrai primeiro valor significativo da secao Bias para comparar com frontmatter.]
 function extractBiasFromBody(body) {
   const match = body.match(/^##\s+Bias\s*$([\s\S]*?)(?=^##\s+|\Z)/im);
   return match?.[1]?.trim().split(/\r?\n/).find(Boolean) ?? "";
 }
 
+//[Confere presenca exata de heading nivel dois exigido pelo contrato.]
 function hasHeading(body, heading) {
   return new RegExp(`^##\\s+${heading}\\s*$`, "im").test(body);
 }
 
+//[Valida frontmatter, corpo e referencias de captura antes de qualquer copia.]
 function validateFrontmatter(frontmatter, body, dossierRoot) {
   assert(frontmatter && typeof frontmatter === "object", "Frontmatter is missing or invalid.");
 
@@ -109,6 +115,7 @@ function validateFrontmatter(frontmatter, body, dossierRoot) {
   return frontmatter;
 }
 
+//[Lê index.md staged, parseia frontmatter e aplica validacao de contrato.]
 async function readDossier(dossierRoot) {
   const indexPath = resolve(dossierRoot, "index.md");
   const raw = await readFile(indexPath, "utf8");
@@ -122,6 +129,7 @@ async function readDossier(dossierRoot) {
   };
 }
 
+//[Substitui diretorio alvo com temp intermediario para reduzir janelas de estado parcial.]
 async function replaceDirectory(targetDir, sourceDir) {
   const tempDir = resolve(dirname(targetDir), `.tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
   await rm(tempDir, { recursive: true, force: true });
@@ -155,6 +163,7 @@ async function replaceDirectory(targetDir, sourceDir) {
   }
 }
 
+//[Promove dossiers staged para content archives, com dry-run e limpeza opcional.]
 export async function runPromote({
   configPath,
   folders = [],

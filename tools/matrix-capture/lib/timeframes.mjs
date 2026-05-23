@@ -1,8 +1,10 @@
+//[Define timeframes capturados por modo, preservando ordem usada em manifests e dossiers.]
 export const MODE_TIMEFRAMES = Object.freeze({
-  instant: ["15", "30", "1h", "2h"],
-  continuous: ["1M", "1W", "1D", "4h"]
+  instant: ["1h", "2h"],
+  continuous: ["1W", "1D", "4h"]
 });
 
+//[Mapeia labels internos para resolucoes aceitas pela API do TradingView.]
 export const TIMEFRAME_TO_RESOLUTION = Object.freeze({
   "15": "15",
   "30": "30",
@@ -14,6 +16,7 @@ export const TIMEFRAME_TO_RESOLUTION = Object.freeze({
   "1M": "M"
 });
 
+//[Converte resolucoes retornadas pelo TradingView para labels usados pelo projeto.]
 export const RESOLUTION_TO_TIMEFRAME = Object.freeze({
   "15": "15",
   "30": "30",
@@ -25,6 +28,7 @@ export const RESOLUTION_TO_TIMEFRAME = Object.freeze({
   M: "1M"
 });
 
+//[Retorna lista de timeframes do modo ou falha para modo desconhecido.]
 export function modeTimeframes(mode) {
   const timeframes = MODE_TIMEFRAMES[mode];
   if (!timeframes) {
@@ -33,6 +37,7 @@ export function modeTimeframes(mode) {
   return timeframes;
 }
 
+//[Resolve timeframe individual para resolucao TradingView usada ao trocar grafico.]
 export function timeframeResolution(timeframe) {
   const resolution = TIMEFRAME_TO_RESOLUTION[timeframe];
   if (!resolution) {
@@ -41,10 +46,12 @@ export function timeframeResolution(timeframe) {
   return resolution;
 }
 
+//[Normaliza timeframe para trecho de folder, mantendo formato minusculo quando necessario.]
 export function normalizeTimeframeForFolder(timeframe) {
   return timeframe.toLowerCase();
 }
 
+//[Monta folder de captura, exigindo timeframe especifico para dossiers instant.]
 export function folderNameForCapture({ asset, mode, timeframe = null }) {
   const base = `${asset.toLowerCase()}-${mode}`;
   if (mode === "instant") {
@@ -56,6 +63,7 @@ export function folderNameForCapture({ asset, mode, timeframe = null }) {
   return base;
 }
 
+//[Formata data UTC sem depender de locale ou timezone da maquina.]
 export function formatUtcDate(date) {
   return [
     date.getUTCFullYear(),
@@ -64,6 +72,7 @@ export function formatUtcDate(date) {
   ].join("-");
 }
 
+//[Formata hora e minuto UTC usados em nomes canonical de capturas.]
 export function formatUtcHm(date) {
   return [
     String(date.getUTCHours()).padStart(2, "0"),
@@ -71,10 +80,12 @@ export function formatUtcHm(date) {
   ].join("-");
 }
 
+//[Gera nome canonical de PNG combinando modo, ativo, minuto UTC e timeframe.]
 export function canonicalCaptureFileName({ mode, asset, captureTimeUtc, timeframe }) {
   return `${mode}_${asset.toLowerCase()}_${formatUtcDate(captureTimeUtc)}_${formatUtcHm(captureTimeUtc)}_${timeframe}.png`;
 }
 
+//[Compara datas no nivel de minuto UTC para proteger capturas continuous.]
 export function sameUtcMinute(left, right) {
   return (
     left.getUTCFullYear() === right.getUTCFullYear() &&

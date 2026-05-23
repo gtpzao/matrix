@@ -1,6 +1,8 @@
 ---
 import ConsolePanel from "./ConsolePanel.astro";
+import { compareAssets } from "../lib/archives";
 
+//[Descreve payload serializado para o console interativo sem carregar corpo duas vezes.]
 type ArchiveRenderable = {
   id: string;
   slug: string;
@@ -19,18 +21,27 @@ type ArchiveRenderable = {
   Content: any;
 };
 
+//[Guarda resumo por ativo usado para montar filtros expansivos por tipo.]
 type AssetFilterMeta = {
   asset: string;
   count: number;
   latestArchiveId: string;
 };
 
+type TimeframeFilterMeta = {
+  timeframe: string;
+  count: number;
+};
+
+//[Agrupa contagem total e ativos disponiveis dentro de cada tipo de dossier.]
 type TypeFilterMeta = {
   type: string;
   totalCount: number;
   assets: AssetFilterMeta[];
+  timeframes: TimeframeFilterMeta[];
 };
 
+//[Declara props recebidas da rota archive apos conteudo ser resolvido server-side.]
 interface Props {
   archives: ArchiveRenderable[];
   types: string[];
@@ -39,17 +50,19 @@ interface Props {
 
 const { archives, types, initialType } = Astro.props;
 
+//[Mapeia copy curta de cada tipo para subtitulo visual dos cards de filtro.]
 const typeCopy: Record<string, string> = {
   continuous: "everlasting",
   instant: "immediate"
 };
 
+//[Define timeframes fallback para painel asset quando nenhum arquivo esta selecionado.]
 const timeframeDefaults: Record<string, string[]> = {
-  continuous: ["1M", "1W", "1D", "4h"],
-  instant: ["15", "30", "1h", "2h"]
+  continuous: ["1W", "1D", "4h"],
+  instant: ["1h", "2h"]
 };
+//[Traduz labels exibidos para intervalos aceitos pelo widget externo TradingView.]
 const timeframeWidgetMap: Record<string, string> = {
-  "1M": "M",
   "1W": "W",
   "1D": "D",
   "4h": "240",
@@ -65,22 +78,40 @@ const timeframeWidgetMap: Record<string, string> = {
   "60": "60"
 };
 
+//[Remove componente renderizavel do indice enviado ao browser para reduzir payload serializado.]
 const archiveIndex = archives.map(({ Content, ...archive }) => archive);
+//[Calcula quantidade maxima de widgets necessaria conforme maior dossier publicado.]
 const widgetCount = Math.max(
   1,
   ...archives.map((archive) => archive.tradingviewTimeframes.length)
 );
+//[Identifica batch mais recente por tipo para marcar itens antigos no feed.]
 const latestBatchKeyByType = new Map(
   types.map((type) => [
     type,
     archiveIndex.find((archive) => archive.type === type)?.slotTimeUtc ?? null
   ])
 );
+//[Precalcula filtros por tipo e ativo para evitar recomputar dentro do script client-side.]
 const typeFilterIndex: TypeFilterMeta[] = types.map((type) => {
   const items = archiveIndex.filter((archive) => archive.type === type);
   const assetMap = new Map<string, AssetFilterMeta>();
+  const timeframeMap = new Map<string, TimeframeFilterMeta>();
 
   items.forEach((archive) => {
+    archive.tradingviewTimeframes.forEach((timeframe) => {
+      const currentTimeframe = timeframeMap.get(timeframe);
+      if (currentTimeframe) {
+        currentTimeframe.count += 1;
+        return;
+      }
+
+      timeframeMap.set(timeframe, {
+        timeframe,
+        count: 1
+      });
+    });
+
     const current = assetMap.get(archive.asset);
     if (current) {
       current.count += 1;
@@ -94,15 +125,33 @@ const typeFilterIndex: TypeFilterMeta[] = types.map((type) => {
     });
   });
 
+  const timeframeOrder = timeframeDefaults[type] ?? [];
+  const timeframes = [...timeframeMap.values()].sort((left, right) => {
+    const leftOrder = timeframeOrder.indexOf(left.timeframe);
+    const rightOrder = timeframeOrder.indexOf(right.timeframe);
+
+    if (leftOrder === -1 && rightOrder === -1) {
+      return left.timeframe.localeCompare(right.timeframe);
+    }
+    if (leftOrder === -1) return 1;
+    if (rightOrder === -1) return -1;
+    return leftOrder - rightOrder;
+  });
+
   return {
     type,
     totalCount: items.length,
-    assets: [...assetMap.values()]
+    assets: [...assetMap.values()].sort((left, right) =>
+      compareAssets(left.asset, right.asset)
+    ),
+    timeframes
   };
 });
+//[Prepara intervalos iniciais para headers dos widgets antes de qualquer selecao.]
 const initialIntervals = (
   timeframeDefaults[initialType] ?? ["--"]
 ).slice(0, widgetCount);
+//[Formata contagens com dois digitos para manter largura visual previsivel.]
 const formatCount = (value: number) => String(value).padStart(2, "0");
 ---
 
@@ -168,6 +217,51 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
                       </button>
                     ))
                   }
+
+                  {
+                    type === "instant" && (
+                      <div class="type-timeframe-filter" data-timeframe-panel={type}>
+                        <span class="type-timeframe-filter__label">TIMEFRAME</span>
+                        <div class="type-timeframe-filter__grid">
+                          <button
+                            type="button"
+                            class="type-timeframe-chip type-timeframe-chip--all"
+                            data-timeframe-button={type}
+                            data-timeframe-type={type}
+                            data-timeframe-value=""
+                          >
+                            <span>ALL</span>
+                            <span
+                              data-timeframe-count={type}
+                              data-timeframe-count-value=""
+                            >
+                              {formatCount(typeFilter?.totalCount ?? 0)}
+                            </span>
+                          </button>
+
+                          {
+                            typeFilter?.timeframes.map(({ timeframe, count }) => (
+                              <button
+                                type="button"
+                                class="type-timeframe-chip"
+                                data-timeframe-button={type}
+                                data-timeframe-type={type}
+                                data-timeframe-value={timeframe}
+                              >
+                                <span>{timeframe}</span>
+                                <span
+                                  data-timeframe-count={type}
+                                  data-timeframe-count-value={timeframe}
+                                >
+                                  {formatCount(count)}
+                                </span>
+                              </button>
+                            ))
+                          }
+                        </div>
+                      </div>
+                    )
+                  }
                 </div>
               </article>
             );
@@ -193,6 +287,7 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
               data-archive-item={archive.id}
               data-archive-type={archive.type}
               data-archive-asset={archive.asset}
+              data-archive-timeframes={archive.tradingviewTimeframes.join("|")}
               data-archive-order={order}
               hidden={archive.type !== initialType}
             >
@@ -296,15 +391,19 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
     typeFilterIndex
   }}
 >
+  //[Inicializa comportamento client-side uma unica vez, mesmo com transicoes Astro entre paginas.]
   const initArchiveConsole = () => {
     const root = document.querySelector("[data-archive-console]");
-    if (!root || root.dataset.archiveBound === "true") return;
-    root.dataset.archiveBound = "true";
+    const bindVersion = "multi-expanded-types-v1";
+    if (!root || root.dataset.archiveBound === bindVersion) return;
+    root.dataset.archiveBound = bindVersion;
 
     const typeCards = [...root.querySelectorAll("[data-type-card]")];
     const typeButtons = [...root.querySelectorAll("[data-type-button]")];
     const expandButtons = [...root.querySelectorAll("[data-type-expand]")];
     const assetFilterButtons = [...root.querySelectorAll("[data-asset-button]")];
+    const timeframeFilterButtons = [...root.querySelectorAll("[data-timeframe-button]")];
+    const timeframeCountNodes = [...root.querySelectorAll("[data-timeframe-count]")];
     const assetPanels = [...root.querySelectorAll("[data-type-assets-panel]")];
     const archiveItems = [...root.querySelectorAll("[data-archive-item]")];
     const toggleButtons = [...root.querySelectorAll("[data-archive-toggle]")];
@@ -320,6 +419,7 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
     const fileIdNode = root.querySelector("[data-detail-fileid]");
     const linkNode = root.querySelector("[data-detail-link]");
 
+    //[Cria indices em memoria para lookup rapido de arquivos, tipos, elementos e bodies.]
     const archiveMap = new Map(archiveIndex.map((archive) => [archive.id, archive]));
     const typeFilterMap = new Map(
       typeFilterIndex.map((typeFilter) => [typeFilter.type, typeFilter])
@@ -337,8 +437,12 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
     const defaultIntervalsForType = (type) =>
       timeframeDefaults[type] ?? ["--"];
 
+    //[Converte timeframe exibido para intervalo esperado pela configuracao do widget TradingView.]
     const toWidgetInterval = (value) => timeframeWidgetMap[value] ?? value;
 
+    const formatUiCount = (value) => String(value).padStart(2, "0");
+
+    //[Confere se filtro de ativo existe no tipo atual antes de aceitar querystring.]
     const assetExistsInType = (type, asset) =>
       Boolean(
         asset &&
@@ -347,17 +451,49 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
             ?.assets.some((typeFilter) => typeFilter.asset === asset)
       );
 
-    const latestArchiveForAsset = (type, asset) => {
-      const latestArchiveId = typeFilterMap
-        .get(type)
-        ?.assets.find((typeFilter) => typeFilter.asset === asset)?.latestArchiveId;
+    const timeframeExistsInType = (type, timeframe) =>
+      Boolean(
+        type === "instant" &&
+          timeframe &&
+          archiveIndex.some(
+            (archive) =>
+              archive.type === type &&
+              archive.tradingviewTimeframes.includes(timeframe)
+          )
+      );
 
-      return latestArchiveId ? archiveMap.get(latestArchiveId) ?? null : null;
+    const archiveMatchesFilters = (
+      archive,
+      {
+        type = activeType,
+        asset = activeAsset,
+        timeframe = activeTimeframe
+      } = {}
+    ) =>
+      archive.type === type &&
+      (!asset || archive.asset === asset) &&
+      (!timeframe || archive.tradingviewTimeframes.includes(timeframe));
+
+    const latestArchiveForFilters = () =>
+      archiveIndex.find((archive) => archiveMatchesFilters(archive)) ?? null;
+
+    const syncTimeframeCounts = () => {
+      timeframeCountNodes.forEach((node) => {
+        const type = node.dataset.timeframeCount;
+        const timeframe = node.dataset.timeframeCountValue || null;
+        const scopedAsset = type === activeType ? activeAsset : null;
+        const count = archiveIndex.filter(
+          (archive) =>
+            archive.type === type &&
+            (!scopedAsset || archive.asset === scopedAsset) &&
+            (!timeframe || archive.tradingviewTimeframes.includes(timeframe))
+        ).length;
+
+        node.textContent = formatUiCount(count);
+      });
     };
 
-    const latestArchiveForType = (type) =>
-      archiveIndex.find((archive) => archive.type === type) ?? null;
-
+    //[Reduz feed em telas menores para manter console legivel e evitar scroll excessivo.]
     const getVisibleLimit = () =>
       window.matchMedia("(max-width: 840px)").matches ? 15 : 30;
 
@@ -389,7 +525,7 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       typeCards.forEach((card) => {
         const type = card.dataset.typeCard;
         const isActive = type === activeType;
-        const isExpanded = isActive && expandedType === type;
+        const isExpanded = expandedTypes.has(type);
 
         card.classList.toggle("is-active", isActive);
         card.classList.toggle("is-expanded", isExpanded);
@@ -402,7 +538,7 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       expandButtons.forEach((button) => {
         const type = button.dataset.typeExpand;
         const isActive = type === activeType;
-        const isExpanded = isActive && expandedType === type;
+        const isExpanded = expandedTypes.has(type);
 
         button.classList.toggle("is-active", isActive);
         button.classList.toggle("is-expanded", isExpanded);
@@ -415,7 +551,7 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
 
       assetPanels.forEach((panel) => {
         const type = panel.dataset.typeAssetsPanel;
-        panel.hidden = !(type === activeType && expandedType === type);
+        panel.hidden = !expandedTypes.has(type);
       });
 
       assetFilterButtons.forEach((button) => {
@@ -427,6 +563,19 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
 
         button.classList.toggle("is-active", isActiveButton);
       });
+
+      timeframeFilterButtons.forEach((button) => {
+        const type = button.dataset.timeframeType;
+        const timeframe = button.dataset.timeframeValue || null;
+        const isActiveButton =
+          type === activeType &&
+          ((timeframe === null && activeTimeframe === null) ||
+            timeframe === activeTimeframe);
+
+        button.classList.toggle("is-active", isActiveButton);
+      });
+
+      syncTimeframeCounts();
     };
 
     const collapseArchive = (archiveId) => {
@@ -447,7 +596,10 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       const params = new URLSearchParams();
       const activeArchive = activeArchiveId ? archiveMap.get(activeArchiveId) : null;
       const isDefaultState =
-        activeType === initialType && !activeAsset && !activeArchive;
+        activeType === initialType &&
+        !activeAsset &&
+        !activeTimeframe &&
+        !activeArchive;
       let nextUrl = window.location.pathname;
 
       if (!isDefaultState) {
@@ -455,6 +607,10 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
 
         if (activeAsset) {
           params.set("asset", activeAsset);
+        }
+
+        if (activeTimeframe) {
+          params.set("timeframe", activeTimeframe);
         }
 
         if (activeArchive?.slug) {
@@ -474,6 +630,7 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       const params = new URLSearchParams(window.location.search);
       const requestedType = params.get("type");
       const requestedAsset = params.get("asset");
+      const requestedTimeframe = params.get("timeframe");
       const requestedSlug = params.get("slug");
       const archiveFromSlug = requestedSlug
         ? archiveIndex.find((archive) => archive.slug === requestedSlug)
@@ -489,21 +646,32 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
             assetExistsInType(resolvedType, requestedAsset) ? requestedAsset : null
           )
         : null;
+      const resolvedTimeframe =
+        resolvedType === "instant"
+          ? archiveFromQuery?.tradingviewTimeframes[0] ?? (
+              timeframeExistsInType(resolvedType, requestedTimeframe)
+                ? requestedTimeframe
+                : null
+            )
+          : null;
 
       return {
         type: resolvedType,
         asset: resolvedAsset,
+        timeframe: resolvedTimeframe,
         archiveId: archiveFromQuery?.id ?? null,
-        expandedType: resolvedAsset ? resolvedType : null
+        expandedTypes: resolvedAsset || resolvedTimeframe ? [resolvedType] : []
       };
     };
 
     let widgetRenderNonce = 0;
     let activeType = initialType;
     let activeAsset = null;
+    let activeTimeframe = null;
     let activeArchiveId = null;
-    let expandedType = null;
+    let expandedTypes = new Set();
 
+    //[Carrega script TradingView sob demanda e sinaliza falha sem travar console.]
     const ensureTradingView = async () => {
       if (window.TradingView?.widget) return true;
 
@@ -531,6 +699,7 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       return Boolean(window.TradingView?.widget);
     };
 
+    //[Renderiza widgets do arquivo ativo, protegendo contra respostas antigas assincronas.]
     const renderWidgets = async (archive) => {
       const nonce = ++widgetRenderNonce;
 
@@ -583,6 +752,7 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       });
     };
 
+    //[Atualiza painel lateral com metadata, link e widgets do arquivo selecionado.]
     const showDetailForArchive = async (archive) => {
       if (!archive) {
         const fallbackIntervals = defaultIntervalsForType(activeType);
@@ -623,20 +793,15 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       await renderWidgets(archive);
     };
 
+    //[Escolhe arquivo detalhado por selecao explicita, filtro ativo ou item mais recente.]
     const syncDetail = async () => {
       const activeArchive = activeArchiveId ? archiveMap.get(activeArchiveId) : null;
-      const filteredArchive =
-        !activeArchive && activeAsset
-          ? latestArchiveForAsset(activeType, activeAsset)
-          : null;
-      const defaultArchive =
-        !activeArchive && !activeAsset
-          ? latestArchiveForType(activeType)
-          : null;
+      const filteredArchive = !activeArchive ? latestArchiveForFilters() : null;
 
-      await showDetailForArchive(activeArchive ?? filteredArchive ?? defaultArchive);
+      await showDetailForArchive(activeArchive ?? filteredArchive);
     };
 
+    //[Fecha arquivo aberto quando filtro ou limite de feed torna selecao invalida.]
     const resetOpenArchive = () => {
       if (activeArchiveId) {
         collapseArchive(activeArchiveId);
@@ -645,6 +810,7 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       activeArchiveId = null;
     };
 
+    //[Mostra somente itens compativeis com tipo, ativo e limite responsivo atual.]
     const updateFeedVisibility = () => {
       let shown = 0;
       const visibleLimit = getVisibleLimit();
@@ -653,16 +819,22 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
         const matchesType = item.dataset.archiveType === activeType;
         const matchesAsset =
           !activeAsset || item.dataset.archiveAsset === activeAsset;
+        const matchesTimeframe =
+          !activeTimeframe ||
+          (item.dataset.archiveTimeframes ?? "")
+            .split("|")
+            .includes(activeTimeframe);
         const isPinnedActive = item.dataset.archiveItem === activeArchiveId;
         const visible =
           matchesType &&
           matchesAsset &&
+          matchesTimeframe &&
           (shown < visibleLimit || isPinnedActive);
 
         item.hidden = !visible;
         item.classList.toggle("is-hidden", !visible);
 
-        if (matchesType && matchesAsset && !isPinnedActive) {
+        if (matchesType && matchesAsset && matchesTimeframe && !isPinnedActive) {
           shown += 1;
         }
       });
@@ -673,6 +845,7 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       }
     };
 
+    //[Abre arquivo no feed, sincronizando tipo, ativo, corpo expandido e painel asset.]
     const openArchive = async (archiveId) => {
       const archive = archiveMap.get(archiveId);
       const item = itemMap.get(archiveId);
@@ -685,6 +858,13 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       if (activeAsset && activeAsset !== archive.asset) {
         activeAsset = archive.asset;
       }
+      if (
+        activeTimeframe &&
+        !archive.tradingviewTimeframes.includes(activeTimeframe)
+      ) {
+        activeTimeframe =
+          archive.type === "instant" ? archive.tradingviewTimeframes[0] : null;
+      }
 
       collapseAll();
       activeArchiveId = archive.id;
@@ -696,10 +876,12 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       await syncDetail();
     };
 
+    //[Troca tipo ativo, limpa selecoes dependentes e redesenha filtros, feed e detalhes.]
     const setActiveType = async (type, { expand = false } = {}) => {
       activeType = type;
       activeAsset = null;
-      expandedType = expand ? type : null;
+      activeTimeframe = null;
+      if (expand) expandedTypes.add(type);
       collapseAll();
       activeArchiveId = null;
       syncTypeUi();
@@ -707,9 +889,15 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       await syncDetail();
     };
 
-    const setActiveAsset = async (asset) => {
+    //[Aplica filtro de ativo dentro do tipo corrente e escolhe novo detalhe padrao.]
+    const setActiveAsset = async (type, asset) => {
+      const previousType = activeType;
+      activeType = type;
       activeAsset = asset;
-      expandedType = activeType;
+      if (type !== "instant" || previousType !== type) {
+        activeTimeframe = null;
+      }
+      expandedTypes.add(type);
       collapseAll();
       activeArchiveId = null;
       syncTypeUi();
@@ -717,52 +905,95 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       await syncDetail();
     };
 
+    const setActiveTimeframe = async (type, timeframe) => {
+      const previousType = activeType;
+      if (type !== "instant") return;
+      activeType = type;
+      if (previousType !== type) {
+        activeAsset = null;
+      }
+      activeTimeframe = timeframe;
+      expandedTypes.add(type);
+      collapseAll();
+      activeArchiveId = null;
+      syncTypeUi();
+      updateFeedVisibility();
+      await syncDetail();
+    };
+
+    //[Abre ou fecha lista de ativos, alternando tipo quando usuario expande outro card.]
     const toggleExpandedType = async (type) => {
+      if (expandedTypes.has(type)) {
+        expandedTypes.delete(type);
+        if (type === activeType) {
+          activeAsset = null;
+          activeTimeframe = null;
+          collapseAll();
+          activeArchiveId = null;
+          syncTypeUi();
+          updateFeedVisibility();
+          await syncDetail();
+          return;
+        }
+
+        syncTypeUi();
+        return;
+      }
+
       if (type !== activeType) {
         await setActiveType(type, { expand: true });
         return;
       }
 
-      if (expandedType === type) {
-        expandedType = null;
-        activeAsset = null;
-        syncTypeUi();
-        updateFeedVisibility();
-        await syncDetail();
-        return;
-      }
-
-      expandedType = type;
+      expandedTypes.add(type);
       syncTypeUi();
     };
 
-    typeButtons.forEach((button) => {
-      button.addEventListener("click", async () => {
-        const nextType = button.dataset.typeButton;
+    //[Registra handlers via delegacao para sobreviver a swaps de DOM em dev e transicoes.]
+    root.addEventListener("click", async (event) => {
+      if (!(event.target instanceof Element)) return;
+
+      const typeButton = event.target.closest("[data-type-button]");
+      if (typeButton && root.contains(typeButton)) {
+        const nextType = typeButton.dataset.typeButton;
         if (!nextType || nextType === activeType) return;
         await setActiveType(nextType);
-      });
-    });
+        return;
+      }
 
-    expandButtons.forEach((button) => {
-      button.addEventListener("click", async () => {
-        const type = button.dataset.typeExpand;
+      const expandButton = event.target.closest("[data-type-expand]");
+      if (expandButton && root.contains(expandButton)) {
+        const type = expandButton.dataset.typeExpand;
         if (!type) return;
         await toggleExpandedType(type);
-      });
-    });
+        return;
+      }
 
-    assetFilterButtons.forEach((button) => {
-      button.addEventListener("click", async () => {
-        const asset = button.dataset.assetValue || null;
-        const nextAsset = asset === activeAsset ? null : asset;
-        await setActiveAsset(nextAsset);
-      });
-    });
+      const assetButton = event.target.closest("[data-asset-button]");
+      if (assetButton && root.contains(assetButton)) {
+        const type = assetButton.dataset.assetType;
+        if (!type) return;
+        const asset = assetButton.dataset.assetValue || null;
+        const nextAsset =
+          type === activeType && asset === activeAsset ? null : asset;
+        await setActiveAsset(type, nextAsset);
+        return;
+      }
 
-    toggleButtons.forEach((button) => {
-      button.addEventListener("click", async () => {
-        const archiveId = button.dataset.archiveToggle;
+      const timeframeButton = event.target.closest("[data-timeframe-button]");
+      if (timeframeButton && root.contains(timeframeButton)) {
+        const type = timeframeButton.dataset.timeframeType;
+        if (!type) return;
+        const timeframe = timeframeButton.dataset.timeframeValue || null;
+        const nextTimeframe =
+          type === activeType && timeframe === activeTimeframe ? null : timeframe;
+        await setActiveTimeframe(type, nextTimeframe);
+        return;
+      }
+
+      const toggleButton = event.target.closest("[data-archive-toggle]");
+      if (toggleButton && root.contains(toggleButton)) {
+        const archiveId = toggleButton.dataset.archiveToggle;
         if (!archiveId) return;
 
         if (activeArchiveId === archiveId) {
@@ -773,14 +1004,15 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
         }
 
         await openArchive(archiveId);
-      });
-    });
+      }
+    }, { capture: true });
 
     const initialSelection = resolveInitialSelection();
     activeType = initialSelection.type;
     activeAsset = initialSelection.asset;
+    activeTimeframe = initialSelection.timeframe;
     activeArchiveId = initialSelection.archiveId;
-    expandedType = initialSelection.expandedType;
+    expandedTypes = new Set(initialSelection.expandedTypes);
 
     syncTypeUi();
     updateFeedVisibility();
@@ -797,6 +1029,7 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
     });
   };
 
+  //[Garante inicializacao depois de navegacao Astro e tambem na primeira carga direta.]
   if (!window.__matrixArchiveConsoleInit) {
     window.__matrixArchiveConsoleInit = true;
     document.addEventListener("astro:page-load", initArchiveConsole);

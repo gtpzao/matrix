@@ -2,16 +2,19 @@ import { dirname } from "path";
 import { mkdirSync } from "fs";
 import { spawnSync } from "child_process";
 
+//[Garante execucao no Windows, unico ambiente implementado para clipboard com Forms.]
 function ensureWindows() {
   if (process.platform !== "win32") {
     throw new Error("Clipboard image export v1 is implemented for Windows only.");
   }
 }
 
+//[Escapa string como literal PowerShell para evitar quebra em paths com aspas.]
 function quoteForPowerShell(value) {
   return `'${String(value).replace(/'/g, "''")}'`;
 }
 
+//[Executa PowerShell em modo STA e transforma falhas em excecoes JavaScript.]
 function runPowerShell(script) {
   const result = spawnSync(
     "powershell.exe",
@@ -27,6 +30,7 @@ function runPowerShell(script) {
   return (result.stdout || "").trim();
 }
 
+//[Limpa clipboard antes de disparar exportacao para nao reutilizar imagem antiga.]
 export function clearClipboard() {
   ensureWindows();
   runPowerShell(`
@@ -35,6 +39,7 @@ export function clearClipboard() {
   `);
 }
 
+//[Espera imagem aparecer no clipboard e salva PNG no path solicitado.]
 export function saveClipboardImage(filePath, { timeoutMs = 8000, pollMs = 250 } = {}) {
   ensureWindows();
   mkdirSync(dirname(filePath), { recursive: true });

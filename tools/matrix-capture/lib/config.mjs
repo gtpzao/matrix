@@ -2,12 +2,14 @@ import { existsSync, readFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
+//[Calcula paths principais a partir da localizacao da ferramenta dentro do repo.]
 const libDir = dirname(fileURLToPath(import.meta.url));
 export const toolRoot = resolve(libDir, "..");
 export const repoRoot = resolve(toolRoot, "../..");
 export const projectRoot = resolve(repoRoot, "..");
 export const defaultConfigPath = resolve(toolRoot, "config", "assets.json");
 
+//[Normaliza entrada de ativo e valida flags exigidas para ambos modos.]
 function normalizeAssetEntry(entry, index) {
   if (!entry || typeof entry !== "object") {
     throw new Error(`Asset entry #${index + 1} must be an object.`);
@@ -33,6 +35,7 @@ function normalizeAssetEntry(entry, index) {
   };
 }
 
+//[Carrega assets.json, aplica defaults e devolve paths operacionais absolutos.]
 export function loadConfig(configPath = defaultConfigPath) {
   if (!existsSync(configPath)) {
     throw new Error(`Capture config not found at ${configPath}`);

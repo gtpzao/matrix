@@ -1,13 +1,16 @@
 import CDP from "chrome-remote-interface";
 import { timeframeResolution } from "./timeframes.mjs";
 
+//[Define tempos de polling usados ao esperar TradingView refletir symbol e timeframe.]
 const DEFAULT_TIMEOUT_MS = 15000;
 const POLL_INTERVAL_MS = 250;
 
+//[Aguarda intervalo curto entre chamadas CDP e mudancas visuais do grafico.]
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+//[Normaliza resolucoes TradingView para comparar valores equivalentes de UI e API.]
 function normalizeResolution(value) {
   const normalized = String(value || "").trim().toUpperCase();
   if (normalized === "M") return "1M";
@@ -19,6 +22,7 @@ function normalizeResolution(value) {
   return normalized;
 }
 
+//[Compara symbol esperado contra varias fontes retornadas pelo estado do grafico.]
 function symbolMatches(state, expectedSymbol) {
   const target = String(expectedSymbol || "").trim().toUpperCase();
   if (!target) {
@@ -39,6 +43,7 @@ function symbolMatches(state, expectedSymbol) {
   return candidates.some((value) => value.includes(stripped));
 }
 
+//[Compara timeframe esperado com resolucao atual, aceitando aliases normalizados do TradingView.]
 function resolutionMatches(state, expectedResolution) {
   if (!expectedResolution) {
     return true;
@@ -46,7 +51,9 @@ function resolutionMatches(state, expectedResolution) {
   return normalizeResolution(state.resolution) === normalizeResolution(expectedResolution);
 }
 
+//[Encapsula conexao CDP com TradingView Desktop e operacoes do grafico ativo.]
 export class TradingViewDesktop {
+  //[Inicializa cliente sem conectar, permitindo configurar host e porta antes do uso.]
   constructor({ port = 9222 } = {}) {
     this.host = "localhost";
     this.port = port;
@@ -54,6 +61,7 @@ export class TradingViewDesktop {
     this.target = null;
   }
 
+  //[Abre ou reaproveita cliente CDP valido, habilitando dominios necessarios para automacao.]
   async connect() {
     if (this.client) {
       try {
@@ -86,6 +94,7 @@ export class TradingViewDesktop {
     return this.client;
   }
 
+  //[Fecha cliente CDP atual e limpa referencias internas sem propagar falha.]
   async close() {
     if (!this.client) {
       return;
@@ -100,6 +109,7 @@ export class TradingViewDesktop {
     }
   }
 
+  //[Localiza target TradingView entre paginas expostas pela porta CDP configurada.]
   async findTarget() {
     let response;
     try {
@@ -122,6 +132,7 @@ export class TradingViewDesktop {
       || null;
   }
 
+  //[Executa expressao no contexto da pagina TradingView e propaga exceptionDetails.]
   async evaluate(expression, { awaitPromise = false } = {}) {
     const client = await this.connect();
     const result = await client.Runtime.evaluate({
@@ -140,6 +151,7 @@ export class TradingViewDesktop {
     return result.result?.value;
   }
 
+  //[Lê symbol, resolucao, estudos e URL diretamente da API interna TradingView.]
   async getState() {
     return this.evaluate(`
       (function() {
@@ -160,6 +172,7 @@ export class TradingViewDesktop {
     `);
   }
 
+  //[Carrega layout salvo por nome quando config pede contexto especifico.]
   async switchLayout(layoutName) {
     if (!layoutName) {
       return null;
@@ -235,6 +248,7 @@ export class TradingViewDesktop {
     return result;
   }
 
+  //[Espera grafico atingir symbol e resolucao esperados antes da proxima acao.]
   async waitForChartReady({ expectedSymbol = null, expectedResolution = null, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
     const startedAt = Date.now();
 
@@ -252,6 +266,7 @@ export class TradingViewDesktop {
     );
   }
 
+  //[Troca symbol do grafico ativo e aguarda confirmacao de estado.]
   async setSymbol(expectedSymbol) {
     await this.evaluate(`
       (function() {
@@ -266,6 +281,7 @@ export class TradingViewDesktop {
     return this.waitForChartReady({ expectedSymbol });
   }
 
+  //[Converte timeframe para resolucao TradingView, aplica no grafico e aguarda.]
   async setTimeframe(timeframe) {
     const resolution = timeframeResolution(timeframe);
     await this.evaluate(`
@@ -278,6 +294,7 @@ export class TradingViewDesktop {
     return this.waitForChartReady({ expectedResolution: resolution });
   }
 
+  //[Foca canvas do grafico via mouse CDP antes de enviar atalhos nativos.]
   async focusChart() {
     const client = await this.connect();
     await client.Page.bringToFront();
@@ -308,6 +325,7 @@ export class TradingViewDesktop {
     await sleep(150);
   }
 
+  //[Envia keyDown e keyUp com mascara de modificadores para atalho nativo.]
   async pressShortcut(key, modifiers) {
     const client = await this.connect();
     let modifierMask = 0;

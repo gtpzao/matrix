@@ -1,7 +1,9 @@
 ---
+//[Importa roteador de transicoes e CSS global aplicados a todas paginas Astro.]
 import { ClientRouter } from "astro:transitions";
 import "../styles/global.css";
 
+//[Define props basicas para titulo, descricao e classe raiz de pagina.]
 interface Props {
   title: string;
   description?: string;
