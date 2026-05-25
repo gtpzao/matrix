@@ -1,11 +1,12 @@
 import { runCapture } from "./runner.mjs";
 import { runDossier } from "./dossier.mjs";
 import { runPromote } from "./promote.mjs";
+import { isSupportedMode } from "./timeframes.mjs";
 
 //[Valida modo antes de iniciar fluxo encadeado que pode gravar arquivos.]
 function ensureMode(mode) {
-  if (mode !== "instant" && mode !== "continuous") {
-    throw new Error(`Unsupported mode "${mode}". Use "instant" or "continuous".`);
+  if (!isSupportedMode(mode)) {
+    throw new Error(`Unsupported mode "${mode}". Use "instant", "continuous" or "parallax-relative".`);
   }
 }
 

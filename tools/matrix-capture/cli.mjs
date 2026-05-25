@@ -11,9 +11,9 @@ import { runPromote } from "./lib/promote.mjs";
 function printUsage() {
   console.error(`Usage:
   node tools/matrix-capture/cli.mjs doctor
-  node tools/matrix-capture/cli.mjs capture <instant|continuous> [now] [--asset BTCUSD,ETHUSD] [--dry-run]
-  node tools/matrix-capture/cli.mjs dossier <instant|continuous> [--asset BTCUSD,ETHUSD] [--folder btcusd-continuous,btcusd-instant-15] [--dry-run]
-  node tools/matrix-capture/cli.mjs pipeline <instant|continuous> [now] [--asset BTCUSD,ETHUSD] [--dry-run] [--cleanup-staging]
+  node tools/matrix-capture/cli.mjs capture <instant|continuous|parallax-relative> [now] [--asset BTCUSD,ETHUSD] [--dry-run]
+  node tools/matrix-capture/cli.mjs dossier <instant|continuous|parallax-relative> [--asset BTCUSD,ETHUSD] [--folder btcusd-continuous,btcusd-instant-15] [--dry-run]
+  node tools/matrix-capture/cli.mjs pipeline <instant|continuous|parallax-relative> [now] [--asset BTCUSD,ETHUSD] [--dry-run] [--cleanup-staging]
   node tools/matrix-capture/cli.mjs promote [--folder btcusd-continuous,btcusd-instant-15] [--dry-run] [--cleanup-staging]
   node tools/matrix-capture/cli.mjs cleanup [--folder btcusd-continuous,btcusd-instant-15] [--dry-run] [--include-failed]`);
 }
@@ -93,7 +93,7 @@ async function main() {
   if (command === "capture") {
     const mode = positionals[1];
     if (!mode) {
-      throw usageError('Missing mode. Use "instant" or "continuous".');
+      throw usageError('Missing mode. Use "instant", "continuous" or "parallax-relative".');
     }
     if (positionals[2] && positionals[2] !== "now") {
       throw usageError(`Unexpected positional "${positionals[2]}". Use "now" or omit it.`);
@@ -106,7 +106,7 @@ async function main() {
   if (command === "dossier") {
     const mode = positionals[1];
     if (!mode) {
-      throw usageError('Missing mode. Use "instant" or "continuous".');
+      throw usageError('Missing mode. Use "instant", "continuous" or "parallax-relative".');
     }
     const result = await runDossier(mode, options);
     console.log(JSON.stringify(result, null, 2));
@@ -116,7 +116,7 @@ async function main() {
   if (command === "pipeline") {
     const mode = positionals[1];
     if (!mode) {
-      throw usageError('Missing mode. Use "instant" or "continuous".');
+      throw usageError('Missing mode. Use "instant", "continuous" or "parallax-relative".');
     }
     if (positionals[2] && positionals[2] !== "now") {
       throw usageError(`Unexpected positional "${positionals[2]}". Use "now" or omit it.`);

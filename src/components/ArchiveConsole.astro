@@ -1,6 +1,6 @@
 ---
 import ConsolePanel from "./ConsolePanel.astro";
-import { compareAssets } from "../lib/archives";
+import { compareAssets, typeLabel } from "../lib/archives";
 
 //[Descreve payload serializado para o console interativo sem carregar corpo duas vezes.]
 type ArchiveRenderable = {
@@ -53,12 +53,14 @@ const { archives, types, initialType } = Astro.props;
 //[Mapeia copy curta de cada tipo para subtitulo visual dos cards de filtro.]
 const typeCopy: Record<string, string> = {
   continuous: "everlasting",
+  "parallax-relative": "relative",
   instant: "immediate"
 };
 
 //[Define timeframes fallback para painel asset quando nenhum arquivo esta selecionado.]
 const timeframeDefaults: Record<string, string[]> = {
   continuous: ["1W", "1D", "4h"],
+  "parallax-relative": ["1D"],
   instant: ["1h", "2h"]
 };
 //[Traduz labels exibidos para intervalos aceitos pelo widget externo TradingView.]
@@ -151,6 +153,9 @@ const typeFilterIndex: TypeFilterMeta[] = types.map((type) => {
 const initialIntervals = (
   timeframeDefaults[initialType] ?? ["--"]
 ).slice(0, widgetCount);
+const typeDisplayLabels = Object.fromEntries(
+  types.map((type) => [type, typeLabel(type)])
+);
 //[Formata contagens com dois digitos para manter largura visual previsivel.]
 const formatCount = (value: number) => String(value).padStart(2, "0");
 ---
@@ -174,7 +179,9 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
                     type="button"
                     data-type-button={type}
                   >
-                    <span class="type-button__title">{type.toUpperCase()}</span>
+                    <span class="type-button__title">
+                      {typeDisplayLabels[type] ?? type.toUpperCase()}
+                    </span>
                     <span class="type-button__copy">{typeCopy[type] ?? "branch active"}</span>
                   </button>
 
@@ -350,7 +357,9 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
           </div>
           <div class="detail-meta__row">
             <span>TYPE</span>
-            <strong data-detail-type>{initialType.toUpperCase()}</strong>
+            <strong data-detail-type>
+              {typeDisplayLabels[initialType] ?? initialType.toUpperCase()}
+            </strong>
           </div>
           <div class="detail-meta__row">
             <span>BIAS</span>
@@ -388,13 +397,14 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
     types,
     timeframeDefaults,
     timeframeWidgetMap,
-    typeFilterIndex
+    typeFilterIndex,
+    typeDisplayLabels
   }}
 >
   //[Inicializa comportamento client-side uma unica vez, mesmo com transicoes Astro entre paginas.]
   const initArchiveConsole = () => {
     const root = document.querySelector("[data-archive-console]");
-    const bindVersion = "multi-expanded-types-v1";
+    const bindVersion = "parallax-relative-v1";
     if (!root || root.dataset.archiveBound === bindVersion) return;
     root.dataset.archiveBound = bindVersion;
 
@@ -436,6 +446,9 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
 
     const defaultIntervalsForType = (type) =>
       timeframeDefaults[type] ?? ["--"];
+
+    const labelForType = (type) =>
+      typeDisplayLabels[type] ?? String(type || "").toUpperCase();
 
     //[Converte timeframe exibido para intervalo esperado pela configuracao do widget TradingView.]
     const toWidgetInterval = (value) => timeframeWidgetMap[value] ?? value;
@@ -757,7 +770,7 @@ const formatCount = (value: number) => String(value).padStart(2, "0");
       if (!archive) {
         const fallbackIntervals = defaultIntervalsForType(activeType);
         if (assetNode) assetNode.textContent = "--";
-        if (typeNode) typeNode.textContent = activeType.toUpperCase();
+        if (typeNode) typeNode.textContent = labelForType(activeType);
         if (biasNode) biasNode.textContent = "--";
         if (dateNode) dateNode.textContent = "--";
         if (fileIdNode) fileIdNode.textContent = "--";

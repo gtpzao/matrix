@@ -1,7 +1,10 @@
 //[Define timeframes capturados por modo, preservando ordem usada em manifests e dossiers.]
+export const PARALLAX_RELATIVE_MODE = "parallax-relative";
+
 export const MODE_TIMEFRAMES = Object.freeze({
   instant: ["1h", "2h"],
-  continuous: ["1W", "1D", "4h"]
+  continuous: ["1W", "1D", "4h"],
+  [PARALLAX_RELATIVE_MODE]: ["1D"]
 });
 
 //[Mapeia labels internos para resolucoes aceitas pela API do TradingView.]
@@ -37,6 +40,16 @@ export function modeTimeframes(mode) {
   return timeframes;
 }
 
+//[Centraliza validacao dos modos operacionais aceitos pela ferramenta.]
+export function isSupportedMode(mode) {
+  return Boolean(MODE_TIMEFRAMES[mode]);
+}
+
+//[Identifica o modo relativo que usa pares A/B e timeframe diario unico.]
+export function isParallaxRelativeMode(mode) {
+  return mode === PARALLAX_RELATIVE_MODE;
+}
+
 //[Resolve timeframe individual para resolucao TradingView usada ao trocar grafico.]
 export function timeframeResolution(timeframe) {
   const resolution = TIMEFRAME_TO_RESOLUTION[timeframe];
@@ -51,9 +64,18 @@ export function normalizeTimeframeForFolder(timeframe) {
   return timeframe.toLowerCase();
 }
 
+//[Converte ativo ou par relativo em trecho seguro para pasta, slug e nome de PNG.]
+export function assetKeyForFile(asset) {
+  return String(asset)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 //[Monta folder de captura, exigindo timeframe especifico para dossiers instant.]
 export function folderNameForCapture({ asset, mode, timeframe = null }) {
-  const base = `${asset.toLowerCase()}-${mode}`;
+  const base = `${assetKeyForFile(asset)}-${mode}`;
   if (mode === "instant") {
     if (!timeframe) {
       throw new Error("Instant dossiers require a timeframe-specific folder.");
@@ -82,7 +104,7 @@ export function formatUtcHm(date) {
 
 //[Gera nome canonical de PNG combinando modo, ativo, minuto UTC e timeframe.]
 export function canonicalCaptureFileName({ mode, asset, captureTimeUtc, timeframe }) {
-  return `${mode}_${asset.toLowerCase()}_${formatUtcDate(captureTimeUtc)}_${formatUtcHm(captureTimeUtc)}_${timeframe}.png`;
+  return `${mode}_${assetKeyForFile(asset)}_${formatUtcDate(captureTimeUtc)}_${formatUtcHm(captureTimeUtc)}_${timeframe}.png`;
 }
 
 //[Compara datas no nivel de minuto UTC para proteger capturas continuous.]

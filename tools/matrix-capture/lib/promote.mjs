@@ -12,6 +12,7 @@ import {
   VALID_TIMEFRAMES,
   VALID_TYPE
 } from "./archive-contract.mjs";
+import { isParallaxRelativeMode } from "./timeframes.mjs";
 
 //[Lista codigos Windows em que rename pode falhar temporariamente durante replace.]
 const WINDOWS_RETRYABLE_CODES = new Set(["EPERM", "EACCES", "ENOTEMPTY"]);
@@ -66,7 +67,7 @@ function validateFrontmatter(frontmatter, body, dossierRoot) {
   assert(frontmatter.asset === frontmatter.asset.toUpperCase(), `"asset" must be uppercase in frontmatter.`);
 
   const type = String(frontmatter.type).trim().toLowerCase();
-  assert(VALID_TYPE.has(type), `"type" must be "instant" or "continuous".`);
+  assert(VALID_TYPE.has(type), `"type" must be "instant", "continuous" or "parallax-relative".`);
   frontmatter.type = type;
 
   const bias = String(frontmatter.bias).trim().toUpperCase();
@@ -82,6 +83,18 @@ function validateFrontmatter(frontmatter, body, dossierRoot) {
   frontmatter.tradingviewTimeframes.forEach((timeframe) => {
     assert(VALID_TIMEFRAMES.has(timeframe), `Unsupported TradingView timeframe "${timeframe}".`);
   });
+
+  if (isParallaxRelativeMode(type)) {
+    assert(typeof frontmatter.relativeBaseAsset === "string" && frontmatter.relativeBaseAsset.trim(), `"relativeBaseAsset" is required for parallax-relative.`);
+    assert(typeof frontmatter.relativeQuoteAsset === "string" && frontmatter.relativeQuoteAsset.trim(), `"relativeQuoteAsset" is required for parallax-relative.`);
+    frontmatter.relativeBaseAsset = frontmatter.relativeBaseAsset.trim().toUpperCase();
+    frontmatter.relativeQuoteAsset = frontmatter.relativeQuoteAsset.trim().toUpperCase();
+    assert(
+      frontmatter.asset === `${frontmatter.relativeBaseAsset}/${frontmatter.relativeQuoteAsset}`,
+      `"asset" must match relativeBaseAsset/relativeQuoteAsset for parallax-relative.`
+    );
+    assert(frontmatter.relativeBaseAsset !== frontmatter.relativeQuoteAsset, `Parallax relative assets must not be identical.`);
+  }
 
   const slotTimeUtc = new Date(frontmatter.slotTimeUtc);
   const captureTimeUtc = new Date(frontmatter.captureTimeUtc);
@@ -107,6 +120,10 @@ function validateFrontmatter(frontmatter, body, dossierRoot) {
   if (type === "instant") {
     assert(frontmatter.slideImages.length === 1, `Instant dossier must reference exactly one capture.`);
     assert(frontmatter.tradingviewTimeframes.length === 1, `Instant dossier must declare exactly one timeframe.`);
+  } else if (isParallaxRelativeMode(type)) {
+    assert(frontmatter.slideImages.length === 1, `Parallax dossier must reference exactly one capture.`);
+    assert(frontmatter.tradingviewTimeframes.length === 1, `Parallax dossier must declare exactly one timeframe.`);
+    assert(frontmatter.tradingviewTimeframes[0] === "1D", `Parallax dossier must declare timeframe 1D.`);
   } else {
     assert(frontmatter.slideImages.length >= 2, `Continuous dossier must reference multiple captures.`);
     assert(frontmatter.tradingviewTimeframes.length >= 2, `Continuous dossier must declare multiple timeframes.`);

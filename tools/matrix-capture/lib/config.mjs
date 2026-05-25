@@ -71,3 +71,22 @@ export function loadConfig(configPath = defaultConfigPath) {
     }
   };
 }
+
+//[Deriva matriz ordenada completa de pares relativos a partir dos ativos habilitados nos dois modos base.]
+export function deriveParallaxRelativePairs(assets) {
+  const eligible = assets.filter((entry) => entry.instant && entry.continuous);
+
+  return eligible.flatMap((base) =>
+    eligible
+      .filter((quote) => quote.asset !== base.asset)
+      .map((quote) => ({
+        asset: `${base.asset}/${quote.asset}`,
+        tradingviewSymbol: `${base.tradingviewSymbol}/${quote.tradingviewSymbol}`,
+        instant: false,
+        continuous: false,
+        parallaxRelative: true,
+        relativeBaseAsset: base.asset,
+        relativeQuoteAsset: quote.asset
+      }))
+  );
+}

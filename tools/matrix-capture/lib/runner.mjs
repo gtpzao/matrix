@@ -1,11 +1,13 @@
 import { mkdir, rename, rm, stat, writeFile } from "fs/promises";
 import { dirname, resolve } from "path";
 import { clearClipboard, saveClipboardImage } from "./windows-clipboard.mjs";
-import { loadConfig } from "./config.mjs";
+import { deriveParallaxRelativePairs, loadConfig } from "./config.mjs";
 import { TradingViewDesktop } from "./tradingview-desktop.mjs";
 import {
   canonicalCaptureFileName,
   folderNameForCapture,
+  isParallaxRelativeMode,
+  isSupportedMode,
   modeTimeframes,
   sameUtcMinute
 } from "./timeframes.mjs";
@@ -34,8 +36,8 @@ function formatRunId(date = new Date()) {
 
 //[Bloqueia modos desconhecidos antes de tocar TradingView ou filesystem operacional.]
 function ensureMode(mode) {
-  if (mode !== "instant" && mode !== "continuous") {
-    throw new Error(`Unsupported mode "${mode}". Use "instant" or "continuous".`);
+  if (!isSupportedMode(mode)) {
+    throw new Error(`Unsupported mode "${mode}". Use "instant", "continuous" or "parallax-relative".`);
   }
 }
 
@@ -59,6 +61,14 @@ async function writeJson(filePath, payload) {
 
 //[Filtra ativos habilitados por modo e por lista opcional recebida na CLI.]
 function selectAssets(config, mode, assetFilter) {
+  if (isParallaxRelativeMode(mode)) {
+    if (assetFilter.size > 0) {
+      throw new Error("--asset is not supported for parallax-relative; the relative matrix is always complete.");
+    }
+
+    return deriveParallaxRelativePairs(config.assets);
+  }
+
   const wanted = assetFilter.size > 0 ? assetFilter : null;
   return config.assets.filter((entry) => {
     if (!entry[mode]) {
@@ -146,6 +156,7 @@ async function captureSingleDossier({
   requestedTimeframes
 }) {
   const isInstant = mode === "instant";
+  const isContinuous = mode === "continuous";
   const folderName = folderNameForCapture({
     asset: asset.asset,
     mode,
@@ -156,7 +167,7 @@ async function captureSingleDossier({
   try {
     await desktop.setSymbol(asset.tradingviewSymbol);
 
-    if (!isInstant) {
+    if (isContinuous) {
       await waitForContinuousMinuteWindow();
     }
 
@@ -198,6 +209,12 @@ async function captureSingleDossier({
       type: mode,
       requestedTradingviewSymbol: asset.tradingviewSymbol,
       capturedTradingviewSymbol: files[0]?.chartState?.fullName || files[0]?.chartState?.symbol || asset.tradingviewSymbol,
+      ...(asset.relativeBaseAsset && asset.relativeQuoteAsset
+        ? {
+            relativeBaseAsset: asset.relativeBaseAsset,
+            relativeQuoteAsset: asset.relativeQuoteAsset
+          }
+        : {}),
       requestedTimeframes,
       captureTimeUtc: captureTimeUtc.toISOString(),
       backend: "tradingview-desktop-native-export",
@@ -205,6 +222,8 @@ async function captureSingleDossier({
       files: files.map((file) => ({
         timeframe: file.timeframe,
         fileName: file.fileName,
+        requestedTradingviewSymbol: asset.tradingviewSymbol,
+        capturedTradingviewSymbol: file.chartState?.fullName || file.chartState?.symbol || asset.tradingviewSymbol,
         shortcut: file.shortcut,
         sizeBytes: file.sizeBytes,
         chartState: file.chartState
@@ -232,6 +251,12 @@ async function captureSingleDossier({
       asset: asset.asset,
       type: mode,
       requestedTradingviewSymbol: asset.tradingviewSymbol,
+      ...(asset.relativeBaseAsset && asset.relativeQuoteAsset
+        ? {
+            relativeBaseAsset: asset.relativeBaseAsset,
+            relativeQuoteAsset: asset.relativeQuoteAsset
+          }
+        : {}),
       requestedTimeframes,
       runId,
       error: error.message
@@ -287,11 +312,17 @@ export async function runCapture(mode, { configPath, assetNames = [], dryRun = f
   const plannedDossiers = [];
 
   for (const asset of selectedAssets) {
-    if (mode === "continuous") {
+    if (mode === "continuous" || isParallaxRelativeMode(mode)) {
       plannedDossiers.push({
         asset: asset.asset,
         mode,
         requestedTradingviewSymbol: asset.tradingviewSymbol,
+        ...(asset.relativeBaseAsset && asset.relativeQuoteAsset
+          ? {
+              relativeBaseAsset: asset.relativeBaseAsset,
+              relativeQuoteAsset: asset.relativeQuoteAsset
+            }
+          : {}),
         requestedTimeframes: timeframes,
         folderName: folderNameForCapture({ asset: asset.asset, mode })
       });

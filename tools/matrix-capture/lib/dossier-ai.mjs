@@ -3,6 +3,7 @@ import { spawn } from "child_process";
 import { tmpdir } from "os";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
+import { isParallaxRelativeMode } from "./timeframes.mjs";
 
 //[Define defaults e limites textuais usados para gerar conteudo curto de dossier.]
 const DEFAULT_CODEX_BIN = "npx";
@@ -136,6 +137,14 @@ function buildPrompt({ asset, mode, tradingviewSymbol, tradingviewTimeframes }) 
   const imageMap = tradingviewTimeframes
     .map((timeframe, index) => `Imagem ${index + 1}: ${timeframe}`)
     .join("; ");
+  const [relativeBaseAsset, relativeQuoteAsset] = asset.split("/");
+  const relativeInstructions = isParallaxRelativeMode(mode)
+    ? [
+        `Este dossier e de forca relativa: o grafico mostra o ratio ${relativeBaseAsset}/${relativeQuoteAsset}, nao preco absoluto isolado.`,
+        `BUY significa comprar ${relativeBaseAsset} contra ${relativeQuoteAsset}; SELL significa vender ${relativeBaseAsset} contra ${relativeQuoteAsset}.`,
+        "Na analysis, descreva tendencia, rompimento, compressao, reversao ou continuidade do ratio relativo."
+      ]
+    : [];
 
   return [
     "Analise os screenshots anexados do TradingView e retorne somente um JSON valido no schema fornecido.",
@@ -145,6 +154,7 @@ function buildPrompt({ asset, mode, tradingviewSymbol, tradingviewTimeframes }) 
     `Modo do dossier: ${mode}.`,
     `Timeframes esperados em ordem: ${tradingviewTimeframes.join(", ")}.`,
     `${imageMap}.`,
+    ...relativeInstructions,
     "Escolha obrigatoriamente apenas um bias global: BUY ou SELL.",
     "Nunca use NEUTRAL.",
     "Preview: resumo da leitura central, com maximo 15 palavras.",

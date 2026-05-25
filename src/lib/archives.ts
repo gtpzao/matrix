@@ -50,7 +50,7 @@ export type ResolvedArchive = {
 };
 
 //[Ordena tipos principais antes de tipos futuros, mantendo fallback alfabetico previsivel.]
-const typePriority = ["continuous", "instant"];
+const typePriority = ["continuous", "parallax-relative", "instant"];
 const assetPriority = ["BTCUSD", "ETHUSD"];
 const timeframePriority = ["1h", "2h", "4h", "1D", "1W", "1M"];
 const markdownSectionPattern = (heading: string) =>
@@ -109,6 +109,10 @@ export function formatArchiveTimestamp(value: Date): string {
 
 //[Transforma tipo normalizado em label curta usada na interface visual.]
 export function typeLabel(type: string): string {
+  if (type === "parallax-relative") {
+    return "PARALLAX";
+  }
+
   return type.toUpperCase();
 }
 

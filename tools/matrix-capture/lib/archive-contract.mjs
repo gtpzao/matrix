@@ -1,8 +1,12 @@
-import { normalizeTimeframeForFolder } from "./timeframes.mjs";
+import {
+  assetKeyForFile,
+  isParallaxRelativeMode,
+  normalizeTimeframeForFolder
+} from "./timeframes.mjs";
 
 //[Declara enums aceitos pelo contrato publicado e pela validacao de promote.]
 export const VALID_BIAS = new Set(["BUY", "SELL", "NEUTRAL"]);
-export const VALID_TYPE = new Set(["instant", "continuous"]);
+export const VALID_TYPE = new Set(["instant", "continuous", "parallax-relative"]);
 export const VALID_TIMEFRAMES = new Set(["1M", "1W", "1D", "4h", "2h", "1h", "30", "15"]);
 
 //[Falha com mensagem direta quando uma regra de contrato nao e satisfeita.]
@@ -28,6 +32,14 @@ export function hhmmUtc(date) {
 
 //[Arredonda captura para slot operacional conforme granularidade do tipo de dossier.]
 export function floorSlotTimeUtc(captureTimeUtc, mode) {
+  if (isParallaxRelativeMode(mode)) {
+    return new Date(Date.UTC(
+      captureTimeUtc.getUTCFullYear(),
+      captureTimeUtc.getUTCMonth(),
+      captureTimeUtc.getUTCDate()
+    ));
+  }
+
   const minutes = mode === "continuous" ? 240 : 60;
   const slotMs = minutes * 60 * 1000;
   return new Date(Math.floor(captureTimeUtc.getTime() / slotMs) * slotMs);
@@ -51,6 +63,10 @@ export function slugForFrontmatter(frontmatter) {
   if (type === "instant") {
     const timeframe = normalizeInstantTimeframe(frontmatter.tradingviewTimeframes[0]);
     return `${type}-${assetLower}-${timeframe}-${datePart}-${timePart}`;
+  }
+
+  if (type === "parallax-relative") {
+    return `${type}-${assetKeyForFile(assetLower)}-${datePart}-${timePart}`;
   }
 
   return `${type}-${assetLower}-${datePart}-${timePart}`;

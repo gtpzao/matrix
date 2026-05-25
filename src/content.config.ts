@@ -12,7 +12,9 @@ const archives = defineCollection({
     captureTimeUtc: z.coerce.date(),
     tradingviewSymbol: z.string(),
     tradingviewTimeframes: z.array(z.string()).min(1),
-    slideImages: z.array(z.string()).min(1)
+    slideImages: z.array(z.string()).min(1),
+    relativeBaseAsset: z.string().optional(),
+    relativeQuoteAsset: z.string().optional()
   })
 });
 

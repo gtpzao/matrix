@@ -1,7 +1,7 @@
 import { copyFile, mkdir, readFile, readdir, rename, rm, writeFile } from "fs/promises";
 import { existsSync } from "fs";
 import { dirname, resolve } from "path";
-import { loadConfig } from "./config.mjs";
+import { deriveParallaxRelativePairs, loadConfig } from "./config.mjs";
 import {
   assert,
   dateYmdUtc,
@@ -12,16 +12,18 @@ import { analyzeDossierContent } from "./dossier-ai.mjs";
 import {
   canonicalCaptureFileName,
   folderNameForCapture,
+  isParallaxRelativeMode,
+  isSupportedMode,
   modeTimeframes
 } from "./timeframes.mjs";
 
 //[Reconhece nomes canonical de capturas e extrai modo, ativo, data, hora e timeframe.]
-const CAPTURE_FILE_PATTERN = /^(instant|continuous)_([a-z0-9]+)_(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2})_(1M|1W|1D|4h|2h|1h|30|15)\.png$/i;
+const CAPTURE_FILE_PATTERN = /^(instant|continuous|parallax-relative)_([a-z0-9]+(?:-[a-z0-9]+)*)_(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2})_(1M|1W|1D|4h|2h|1h|30|15)\.png$/i;
 
 //[Valida modo informado antes de inspecionar staging e chamar etapas que gravam arquivos.]
 function ensureMode(mode) {
-  if (mode !== "instant" && mode !== "continuous") {
-    throw new Error(`Unsupported mode "${mode}". Use "instant" or "continuous".`);
+  if (!isSupportedMode(mode)) {
+    throw new Error(`Unsupported mode "${mode}". Use "instant", "continuous" or "parallax-relative".`);
   }
 }
 
@@ -37,7 +39,41 @@ async function readJsonIfExists(filePath) {
     return null;
   }
   const raw = await readFile(filePath, "utf8");
-  return JSON.parse(raw);
+  return JSON.parse(raw.replace(/^\uFEFF/, ""));
+}
+
+//[Converte trecho de arquivo de par relativo de volta para o asset BASE/QUOTE.]
+function assetFromCaptureKey(mode, assetKey) {
+  if (!isParallaxRelativeMode(mode)) {
+    return assetKey.toUpperCase();
+  }
+
+  const parts = assetKey.split("-").map((part) => part.trim().toUpperCase()).filter(Boolean);
+  assert(parts.length === 2, `Parallax capture asset key "${assetKey}" must be base-quote.`);
+  return `${parts[0]}/${parts[1]}`;
+}
+
+//[Retorna campos relativos derivados do asset BASE/QUOTE quando aplicavel.]
+function relativeFieldsFromAsset(mode, asset) {
+  if (!isParallaxRelativeMode(mode)) {
+    return {};
+  }
+
+  const [relativeBaseAsset, relativeQuoteAsset] = asset.split("/");
+  assert(relativeBaseAsset && relativeQuoteAsset, `Parallax asset "${asset}" must use BASE/QUOTE.`);
+  return {
+    relativeBaseAsset,
+    relativeQuoteAsset
+  };
+}
+
+//[Gera titulo visual especifico para cada tipo de dossier.]
+function titleForDossier(asset, mode) {
+  if (isParallaxRelativeMode(mode)) {
+    return `${asset} // PARALLAX`;
+  }
+
+  return `${asset} // ${mode.toUpperCase()}`;
 }
 
 //[Extrai metadados do nome canonical ou retorna null quando padrao falha.]
@@ -49,7 +85,7 @@ function parseCaptureFileName(fileName) {
 
   return {
     mode: match[1].toLowerCase(),
-    asset: match[2].toUpperCase(),
+    asset: assetFromCaptureKey(match[1].toLowerCase(), match[2]),
     datePart: match[3],
     hmPart: match[4],
     timeframe: match[5]
@@ -86,12 +122,20 @@ function renderIndexMarkdown({
   captureTimeUtc,
   tradingviewSymbol,
   tradingviewTimeframes,
-  slideImages
+  slideImages,
+  relativeBaseAsset,
+  relativeQuoteAsset
 }) {
-  const title = `${asset} // ${mode.toUpperCase()}`;
+  const title = titleForDossier(asset, mode);
   const analysisBlocks = analyses.map(({ timeframe, text }) => {
     return `### ${timeframe}\n\n${text}`;
   }).join("\n\n");
+  const relativeFrontmatter = isParallaxRelativeMode(mode)
+    ? [
+        `relativeBaseAsset: "${relativeBaseAsset}"`,
+        `relativeQuoteAsset: "${relativeQuoteAsset}"`
+      ]
+    : [];
 
   const frontmatter = [
     "---",
@@ -107,6 +151,7 @@ function renderIndexMarkdown({
     ...tradingviewTimeframes.map((timeframe) => `  - "${timeframe}"`),
     "slideImages:",
     ...slideImages.map((image) => `  - "${image}"`),
+    ...relativeFrontmatter,
     "---"
   ].join("\n");
 
@@ -136,9 +181,11 @@ function buildFrontmatter({
   captureTimeUtc,
   tradingviewSymbol,
   tradingviewTimeframes,
-  slideImages
+  slideImages,
+  relativeBaseAsset,
+  relativeQuoteAsset
 }) {
-  return {
+  const frontmatter = {
     title,
     asset,
     type: mode,
@@ -150,6 +197,13 @@ function buildFrontmatter({
     tradingviewTimeframes,
     slideImages
   };
+
+  if (isParallaxRelativeMode(mode)) {
+    frontmatter.relativeBaseAsset = relativeBaseAsset;
+    frontmatter.relativeQuoteAsset = relativeQuoteAsset;
+  }
+
+  return frontmatter;
 }
 
 //[Normaliza metadados de manifest para comparar com arquivos PNG encontrados.]
@@ -170,6 +224,12 @@ function metadataFromManifest(manifest) {
       ? manifest.requestedTimeframes.map((value) => String(value).trim()).filter(Boolean)
       : [],
     captureTimeUtc: manifest.captureTimeUtc ? new Date(manifest.captureTimeUtc) : null,
+    relativeBaseAsset: typeof manifest.relativeBaseAsset === "string"
+      ? manifest.relativeBaseAsset.trim().toUpperCase()
+      : null,
+    relativeQuoteAsset: typeof manifest.relativeQuoteAsset === "string"
+      ? manifest.relativeQuoteAsset.trim().toUpperCase()
+      : null,
     files: Array.isArray(manifest.files) ? manifest.files : []
   };
 }
@@ -212,9 +272,17 @@ async function inspectCaptureFolder(folderPath) {
     mode,
     parsedFiles.map((file) => file.timeframe)
   );
+  const isParallax = isParallaxRelativeMode(mode);
+  const relativeFields = relativeFieldsFromAsset(mode, asset);
 
   if (mode === "instant") {
     assert(parsedFiles.length === 1, `Instant folder "${folderName}" must contain exactly one PNG.`);
+  } else if (isParallax) {
+    assert(parsedFiles.length === 1, `Parallax folder "${folderName}" must contain exactly one PNG.`);
+    assert(
+      tradingviewTimeframes.length === 1 && tradingviewTimeframes[0] === "1D",
+      `Parallax folder "${folderName}" must contain exactly one 1D capture.`
+    );
   } else {
     assert(parsedFiles.length >= 2, `Continuous folder "${folderName}" must contain multiple PNGs.`);
   }
@@ -222,6 +290,16 @@ async function inspectCaptureFolder(folderPath) {
   if (manifest) {
     assert(!manifest.type || manifest.type === mode, `Manifest type does not match files in "${folderName}".`);
     assert(!manifest.asset || manifest.asset === asset, `Manifest asset does not match files in "${folderName}".`);
+    if (isParallax) {
+      assert(
+        !manifest.relativeBaseAsset || manifest.relativeBaseAsset === relativeFields.relativeBaseAsset,
+        `Manifest relativeBaseAsset does not match files in "${folderName}".`
+      );
+      assert(
+        !manifest.relativeQuoteAsset || manifest.relativeQuoteAsset === relativeFields.relativeQuoteAsset,
+        `Manifest relativeQuoteAsset does not match files in "${folderName}".`
+      );
+    }
     if (manifest.captureTimeUtc instanceof Date && !Number.isNaN(manifest.captureTimeUtc.getTime())) {
       assert(
         sameUtcMinute(manifest.captureTimeUtc, captureTimeFromFile),
@@ -282,8 +360,9 @@ async function inspectCaptureFolder(folderPath) {
     parsedFiles,
     canonicalFiles,
     targetFolderName,
-    title: `${asset} // ${mode.toUpperCase()}`,
-    slideImages
+    title: titleForDossier(asset, mode),
+    slideImages,
+    ...relativeFields
   };
 }
 
@@ -316,10 +395,14 @@ export async function runDossier(mode, { configPath, assetNames = [], folders = 
   const config = loadConfig(configPath);
   const inboxTvRoot = config.paths.inboxTvRoot;
   const incomingRoot = config.paths.incomingRoot;
+  if (isParallaxRelativeMode(mode) && assetNames.length > 0) {
+    throw new Error("--asset is not supported for parallax-relative; the relative matrix is always complete.");
+  }
+  const eligibleAssets = isParallaxRelativeMode(mode)
+    ? deriveParallaxRelativePairs(config.assets)
+    : config.assets.filter((entry) => entry[mode]);
   const allowedAssets = new Set(
-    config.assets
-      .filter((entry) => entry[mode])
-      .map((entry) => entry.asset)
+    eligibleAssets.map((entry) => entry.asset)
   );
   const wantedAssets = new Set(
     assetNames.map((value) => String(value).trim().toUpperCase()).filter(Boolean)
@@ -369,10 +452,18 @@ export async function runDossier(mode, { configPath, assetNames = [], folders = 
           captureTimeUtc: dossier.captureTimeUtc,
           tradingviewSymbol: dossier.tradingviewSymbol,
           tradingviewTimeframes: dossier.tradingviewTimeframes,
-          slideImages: dossier.slideImages
+          slideImages: dossier.slideImages,
+          relativeBaseAsset: dossier.relativeBaseAsset,
+          relativeQuoteAsset: dossier.relativeQuoteAsset
         })),
         type: dossier.mode,
         asset: dossier.asset,
+        ...(isParallaxRelativeMode(dossier.mode)
+          ? {
+              relativeBaseAsset: dossier.relativeBaseAsset,
+              relativeQuoteAsset: dossier.relativeQuoteAsset
+            }
+          : {}),
         tradingviewSymbol: dossier.tradingviewSymbol,
         tradingviewTimeframes: dossier.tradingviewTimeframes,
         captureTimeUtc: dossier.captureTimeUtc.toISOString(),
@@ -406,7 +497,9 @@ export async function runDossier(mode, { configPath, assetNames = [], folders = 
       captureTimeUtc: dossier.captureTimeUtc,
       tradingviewSymbol: dossier.tradingviewSymbol,
       tradingviewTimeframes: dossier.tradingviewTimeframes,
-      slideImages: dossier.slideImages
+      slideImages: dossier.slideImages,
+      relativeBaseAsset: dossier.relativeBaseAsset,
+      relativeQuoteAsset: dossier.relativeQuoteAsset
     });
     const indexMarkdown = renderIndexMarkdown({
       asset: dossier.asset,
@@ -418,7 +511,9 @@ export async function runDossier(mode, { configPath, assetNames = [], folders = 
       captureTimeUtc: dossier.captureTimeUtc,
       tradingviewSymbol: dossier.tradingviewSymbol,
       tradingviewTimeframes: dossier.tradingviewTimeframes,
-      slideImages: dossier.slideImages
+      slideImages: dossier.slideImages,
+      relativeBaseAsset: dossier.relativeBaseAsset,
+      relativeQuoteAsset: dossier.relativeQuoteAsset
     });
     const tempDir = await prepareTempFolder(incomingRoot, runId, dossier.targetFolderName);
     for (const file of dossier.canonicalFiles) {
@@ -438,6 +533,12 @@ export async function runDossier(mode, { configPath, assetNames = [], folders = 
       slug: slugForFrontmatter(frontmatter),
       type: dossier.mode,
       asset: dossier.asset,
+      ...(isParallaxRelativeMode(dossier.mode)
+        ? {
+            relativeBaseAsset: dossier.relativeBaseAsset,
+            relativeQuoteAsset: dossier.relativeQuoteAsset
+          }
+        : {}),
       tradingviewSymbol: dossier.tradingviewSymbol,
       tradingviewTimeframes: dossier.tradingviewTimeframes,
       captureTimeUtc: dossier.captureTimeUtc.toISOString(),
