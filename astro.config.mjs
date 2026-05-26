@@ -6,7 +6,7 @@ export default defineConfig({
     enabled: false
   },
   output: "static",
-  site: "https://matrixdossier.netlify.app",
+  site: "https://matrixarchive.vercel.app",
   trailingSlash: "never",
   vite: {
     optimizeDeps: {
